@@ -7,7 +7,7 @@
 
 set -e -u
 SCRIPTPATH=$( cd "$(dirname "$(readlink -f "$0")")"; pwd -P )
-REPOROOT=$( cd "$SCRIPTPATH/."; pwd -P )
+REPOROOT=$( cd "$SCRIPTPATH/.."; pwd -P )
 
 venvpath="$REPOROOT/.venv"
 

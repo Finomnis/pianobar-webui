@@ -2,28 +2,64 @@ import asyncio
 import websockets
 import logging
 
+from typing import Set
+
 from pianobarsocket import settings
-from event_receiver import EventReceiver
+from .event_receiver import EventReceiver
+from .json_rpc import JsonRpcConnection
 
 _logger = logging.getLogger(__name__)
 
 
-#async def websocket_connection(websocket, path):
-#    _logger.info(f"Connected: {path}")
-#    msg = await websocket.recv()
-#    print(msg)
+class Websocket:
+    def __init__(self):
+        self.state = dict()
+        self.clients: Set[JsonRpcConnection] = set()
 
+    async def handleRpcRequests(self):
+        pass
 
-async def websocket_main():
-#    await websocket.serve(websocket_handler, port=settings.WEBSOCKET_PORT)
+    async def websocket_connection_handler(self, websocket, path):
+        _logger.info(f"Connected: {path}")
+        connection = JsonRpcConnection(websocket, path, self.handleRpcRequests)
+        await connection.sendSignal("event", command=None, state=self.state)
 
+        self.clients.add(connection)
+        try:
+            await connection.run()
+        finally:
+            self.clients.remove(connection)
 
+    async def websocket_server(self):
+        await websockets.serve(
+            self.websocket_connection_handler, port=settings.WEBSOCKET_PORT
+        )
 
-async def main():
-    eventReceiver = EventReceiver()
+    async def main(self):
+        _logger.info("Websocket main!")
+        await asyncio.gather(
+            EventReceiver(self).run(),
+            self.websocket_server(),
+        )
 
-    _logger.info("Websocket main!")
+    async def handle_event(self, command, state):
+        self.state = state
+
+        tasks = []
+        for client in self.clients:
+            tasks.append(
+                asyncio.create_task(
+                    client.sendSignal("event", command=command, state=self.state)
+                )
+            )
+
+        for task in tasks:
+            try:
+                await task
+            except Exception as e:
+                _logger.warn(f"Exception while sending event to client: {e}")
 
 
 def run():
-    asyncio.run(main())
+    logging.basicConfig(level=logging.INFO)
+    asyncio.run(Websocket().main())

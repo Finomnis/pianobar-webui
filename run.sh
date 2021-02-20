@@ -5,7 +5,7 @@ set -eu
 SCRIPTPATH=$( cd "$(dirname "$(readlink -f "$0")")"; pwd -P )
 
 # Update venv
-"${SCRIPTPATH}/create_venv.sh"
+"${SCRIPTPATH}/scripts/create_venv.sh"
 
 # Activate venv
 source "${SCRIPTPATH}/.venv/bin/activate"
