@@ -12,7 +12,7 @@ class EventReceiver:
         self.websocket = websocket
 
     async def handle_connection(self, reader, writer):
-        _logger.info("Event provider connected!")
+        _logger.debug("Event provider connected")
         raw_data = await reader.read()
         _logger.info("New event received ...")
         data = json.loads(raw_data.decode("utf-8"))
@@ -20,6 +20,7 @@ class EventReceiver:
         await self.websocket.handle_event(data["command"], data["state"])
 
     async def run(self):
+        _logger.info("Starting event receiver ...")
         server = await asyncio.start_server(
             self.handle_connection, "localhost", port=settings.EVENT_PORT
         )

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import json
 
 _logger = logging.getLogger(__name__)
 
@@ -11,8 +12,12 @@ class JsonRpcConnection:
         self.rpcRequestHandler = rpcRequestHandler
 
     async def sendSignal(self, signal_name, **kwargs):
-        _logger.info(f"SEND SIGNAL {kwargs}")
+        await self.websocket.send(
+            json.dumps({"jsonrpc": "2.0", "method": signal_name, "params": kwargs})
+        )
 
     async def run(self):
-        _logger.info(f"RUN")
-        await asyncio.sleep(10)
+        while True:
+            msg = await self.websocket.recv()
+            print(f"Message received: {msg}")
+            raise NotImplementedError()
