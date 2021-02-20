@@ -23,6 +23,9 @@ echo "Registering pianobar hooks ..."
 echo "Activating virtual environment ..."
 source "${SCRIPTPATH}/.venv/bin/activate"
 
+# Adding cleanup hooks
+trap "jobs -p | xargs -r kill" SIGINT SIGTERM EXIT
+
 # Start processes
 echo "Starting websocket server ..."
 pianobar-websocket &
@@ -36,10 +39,4 @@ echo "Startup procedure finished."
 wait -n
 echo "One of the background processes exited with '$?'."
 
-echo "Killing other background processes ..."
-BACKGROUND_JOBS=$(jobs -p)
-if [ -n "${BACKGROUND_JOBS}" ]; then
-    echo "Killing ${BACKGROUND_JOBS} ..."
-    kill ${BACKGROUND_JOBS}
-fi
 echo "Exiting program."
