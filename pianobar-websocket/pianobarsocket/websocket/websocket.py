@@ -19,8 +19,10 @@ class Websocket:
     async def handleRpcRequests(self):
         pass
 
-    async def websocket_connection_handler(self, websocket, path):
-        _logger.info(f"Connected: {path}")
+    async def websocket_connection_handler(
+        self, websocket: websockets.WebSocketServerProtocol, path: str
+    ):
+        _logger.info(f"Connected: {websocket.host}")
         connection = JsonRpcConnection(websocket, path, self.handleRpcRequests)
         await connection.sendSignal("event", command=None, state=self.state)
 
