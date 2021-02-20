@@ -1,1 +1,1 @@
--e ./pianobar_socket
+-e ./pianobar-socket
