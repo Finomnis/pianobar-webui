@@ -14,4 +14,3 @@ sed -i '/^\s*event_command\s*=.*$/d' "${PIANOBAR_CONFIG}"
 sed -i '/^\s*fifo\s*=.*$/d' "${PIANOBAR_CONFIG}"
 
 echo "event_command = $REPOROOT/.venv/bin/pianobar-websocket-handle-events" >>"${PIANOBAR_CONFIG}"
-echo "fifo = $REPOROOT/control_fifo" >>"${PIANOBAR_CONFIG}"
