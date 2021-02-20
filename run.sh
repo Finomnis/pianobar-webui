@@ -7,12 +7,22 @@ SCRIPTPATH=$( cd "$(dirname "$(readlink -f "$0")")"; pwd -P )
 # Update venv
 "${SCRIPTPATH}/scripts/create_venv.sh"
 
+# Create control fifo
+if [[ -e "${SCRIPTPATH}/control_fifo" ]]; then
+    rm "${SCRIPTPATH}/control_fifo"
+fi
+mkfifo "${SCRIPTPATH}/control_fifo"
+
+# Add hooks to pianobar config
+"${SCRIPTPATH}/scripts/add_hooks_to_pianobar.sh"
+
 # Activate venv
 source "${SCRIPTPATH}/.venv/bin/activate"
 
 # Start processes
-pianobar-websocket-simulate-events &
-sleep 20 &
+pianobar-websocket &
+sleep 2
+pianobar &
 
 # Exit on failure
 wait -n
