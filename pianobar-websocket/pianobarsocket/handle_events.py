@@ -14,41 +14,41 @@ def run():
     if len(args) != 1:
         _logger.error(f"Invalid arguments received: {args}")
         return
-    event_command = args[0]
+    eventCommand = args[0]
 
     # Read stdin data
-    raw_event_data = sys.stdin.read()
-    event_state = {}
-    for entry in raw_event_data.split("\n"):
-        split_entry = entry.split("=", 1)
-        if len(split_entry) != 2:
+    rawEventData = sys.stdin.read()
+    eventState = {}
+    for entry in rawEventData.split("\n"):
+        splitEntry = entry.split("=", 1)
+        if len(splitEntry) != 2:
             continue
-        event_state[split_entry[0]] = split_entry[1]
+        eventState[splitEntry[0]] = splitEntry[1]
 
     # Merge station# entries to 'stations' list
     stations = []
-    if "stationCount" in event_state:
-        station_count = int(event_state["stationCount"])
-        del event_state["stationCount"]
+    if "stationCount" in eventState:
+        stationCount = int(eventState["stationCount"])
+        del eventState["stationCount"]
 
-        stations = [None] * station_count
+        stations = [None] * stationCount
 
-        for i in range(station_count):
-            station_id = f"station{i}"
+        for i in range(stationCount):
+            stationId = f"station{i}"
 
-            if station_id not in event_state:
-                _logger.error(f"Invalid station list. {station_id} does not exist.")
+            if stationId not in eventState:
+                _logger.error(f"Invalid station list. {stationId} does not exist.")
                 continue
 
-            stations[i] = event_state[station_id]
-            del event_state[station_id]
-    event_state["stations"] = stations
+            stations[i] = eventState[stationId]
+            del eventState[stationId]
+    eventState["stations"] = stations
 
     # Convert data to JSON
     message = json.dumps(
         {
-            "command": event_command,
-            "state": event_state,
+            "command": eventCommand,
+            "state": eventState,
         }
     ).encode("utf-8")
 
