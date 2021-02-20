@@ -22,8 +22,8 @@ fi
 source "$venvpath/bin/activate"
 
 # Install newer pip and requirements
-pip3 install --force-reinstall pip==21.0.1
-pip3 install --force-reinstall wheel==0.36.2
+pip3 install --upgrade pip==21.0.1
+pip3 install --upgrade wheel==0.36.2
 
 (cd "$REPOROOT" && pip3 install -r ./requirements.txt)
 
