@@ -22,6 +22,6 @@ class EventReceiver:
     async def run(self):
         _logger.info("Starting event receiver ...")
         server = await asyncio.start_server(
-            self.handle_connection, "localhost", port=settings.EVENT_PORT
+            self.handle_connection, "127.0.0.1", port=settings.EVENT_PORT
         )
         await server.serve_forever()

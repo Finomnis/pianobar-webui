@@ -56,7 +56,7 @@ def run():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         # now connect to the web server on port 80 - the normal http port
         try:
-            s.connect(("localhost", settings.EVENT_PORT))
+            s.connect(("127.0.0.1", settings.EVENT_PORT))
         except ConnectionRefusedError as e:
             _logger.error(f"Unable to connect to websocket server: {e}")
             return
