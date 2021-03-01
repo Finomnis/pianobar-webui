@@ -1,1 +1,1 @@
--e ./pianobar-websocket
+-e ./pianobar-websocket-python
