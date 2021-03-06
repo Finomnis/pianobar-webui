@@ -16,18 +16,18 @@ pub struct PianobarUiEvent {
 
 type PianobarUiState = HashMap<String, json::Value>;
 
-pub struct PianobarEventHandler {
+pub struct PianobarEventReceiver {
     port: u16,
     ui_state: watch::Receiver<PianobarUiState>,
     update_ui_state: watch::Sender<PianobarUiState>,
     ui_events: broadcast::Sender<PianobarUiEvent>,
 }
 
-impl PianobarEventHandler {
-    pub fn new(config: &Config) -> PianobarEventHandler {
+impl PianobarEventReceiver {
+    pub fn new(config: &Config) -> PianobarEventReceiver {
         let (update_ui_state, ui_state) = watch::channel(PianobarUiState::new());
         let (ui_events, _) = broadcast::channel(10);
-        PianobarEventHandler {
+        PianobarEventReceiver {
             port: config.event_port,
             update_ui_state,
             ui_state,

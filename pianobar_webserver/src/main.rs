@@ -1,10 +1,10 @@
 mod config;
-mod event_handler;
+mod event_receiver;
 mod websocket;
 
 use anyhow::Result;
 use config::Config;
-use event_handler::PianobarEventHandler;
+use event_receiver::PianobarEventReceiver;
 use log::info;
 use structopt::StructOpt;
 use warp::Filter;
@@ -38,7 +38,7 @@ async fn main() -> Result<()> {
     };
 
     info!("Create event handler ...");
-    let event_handler = PianobarEventHandler::new(&config);
+    let event_handler = PianobarEventReceiver::new(&config);
     let a = event_handler.get_ui_events();
     let b = event_handler.get_ui_state();
 

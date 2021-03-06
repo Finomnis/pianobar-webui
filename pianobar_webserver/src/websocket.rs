@@ -45,10 +45,3 @@ pub async fn client_connection(websocket: WebSocket, addr_raw: Option<SocketAddr
     }
     log::info!("disconnected: {}", addr);
 }
-
-pub async fn handler(
-    ws: warp::ws::Ws,
-    addr: Option<SocketAddr>,
-) -> std::result::Result<impl Reply, Rejection> {
-    Ok(ws.on_upgrade(move |socket| client_connection(socket, addr)))
-}
