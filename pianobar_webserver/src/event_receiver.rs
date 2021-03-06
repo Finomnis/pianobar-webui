@@ -14,32 +14,54 @@ pub struct PianobarUiEvent {
     pub state: PianobarUiState,
 }
 
-type PianobarUiState = HashMap<String, json::Value>;
+pub type PianobarUiState = HashMap<String, json::Value>;
+
+#[derive(Clone)]
+pub struct PianobarUiEventSourceCreator {
+    ui_state: watch::Receiver<PianobarUiState>,
+    ui_events: broadcast::Sender<PianobarUiEvent>,
+}
+
+pub struct PianobarUiEventSource {
+    pub ui_initial_state: PianobarUiState,
+    pub ui_events: broadcast::Receiver<PianobarUiEvent>,
+}
+
+impl PianobarUiEventSourceCreator {
+    pub fn create_event_source(&self) -> PianobarUiEventSource {
+        PianobarUiEventSource {
+            ui_initial_state: self.ui_state.borrow().clone(),
+            ui_events: self.ui_events.subscribe(),
+        }
+    }
+}
 
 pub struct PianobarEventReceiver {
     port: u16,
     ui_state: watch::Receiver<PianobarUiState>,
     update_ui_state: watch::Sender<PianobarUiState>,
     ui_events: broadcast::Sender<PianobarUiEvent>,
+    _ui_events_dummy_receiver: broadcast::Receiver<PianobarUiEvent>,
 }
 
 impl PianobarEventReceiver {
     pub fn new(config: &Config) -> PianobarEventReceiver {
         let (update_ui_state, ui_state) = watch::channel(PianobarUiState::new());
-        let (ui_events, _) = broadcast::channel(10);
+        let (ui_events, _ui_events_dummy_receiver) = broadcast::channel(10);
         PianobarEventReceiver {
             port: config.event_port,
             update_ui_state,
             ui_state,
             ui_events,
+            _ui_events_dummy_receiver,
         }
     }
 
-    pub fn get_ui_events(&self) -> broadcast::Receiver<PianobarUiEvent> {
-        self.ui_events.subscribe()
-    }
-    pub fn get_ui_state(&self) -> watch::Receiver<PianobarUiState> {
-        self.ui_state.clone()
+    pub fn get_event_source_creator(&self) -> PianobarUiEventSourceCreator {
+        PianobarUiEventSourceCreator {
+            ui_state: self.ui_state.clone(),
+            ui_events: self.ui_events.clone(),
+        }
     }
 
     pub async fn run(&self) -> Result<()> {
@@ -86,7 +108,7 @@ impl PianobarEventReceiver {
             };
 
             if let Err(err) = self.ui_events.send(event) {
-                log::error!("Error while broadcasting ui event: {}", err);
+                log::warn!("Error while broadcasting ui event: {}", err);
             };
         }
     }

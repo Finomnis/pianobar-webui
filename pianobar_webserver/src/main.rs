@@ -16,8 +16,11 @@ async fn main() -> Result<()> {
 
     let config = Config::from_args();
 
+    info!("Create event handler ...");
+    let event_receiver = PianobarEventReceiver::new(&config);
+
     info!("Create websocket ...");
-    let websocket = PianobarWebsocket::new();
+    let websocket = PianobarWebsocket::new(event_receiver.get_event_source_creator());
 
     // GET /hello/warp => 200 OK with body "Hello, warp!"
     let hello = warp::path!("hello" / String).map(|name| format!("Hello, {}!", name));
@@ -37,13 +40,8 @@ async fn main() -> Result<()> {
         Ok(())
     };
 
-    info!("Create event handler ...");
-    let event_handler = PianobarEventReceiver::new(&config);
-    let a = event_handler.get_ui_events();
-    let b = event_handler.get_ui_state();
-
     info!("Starting tasks ...");
-    tokio::try_join!(webserver_task, event_handler.run())?;
+    tokio::try_join!(webserver_task, event_receiver.run())?;
 
     info!("Program ended.");
     Ok(())
