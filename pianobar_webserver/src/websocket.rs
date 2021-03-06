@@ -1,9 +1,8 @@
 use crate::event_receiver::{PianobarUiEventSource, PianobarUiEventSourceCreator};
-use anyhow::Result;
-use futures::{SinkExt, StreamExt};
-use log;
-use std::{borrow::Borrow, net::SocketAddr};
-use warp::ws::WebSocket;
+
+use crate::websocket_connection::PianobarWebsocketConnection;
+
+use std::net::SocketAddr;
 use warp::{Filter, Rejection, Reply};
 
 pub struct PianobarWebsocket {
@@ -47,46 +46,5 @@ impl PianobarWebsocket {
     {
         let source_creator = self.pianobar_ui_event_source_creator.clone();
         warp::any().map(move || source_creator.create_event_source())
-    }
-}
-
-struct PianobarWebsocketConnection {
-    websocket: WebSocket,
-    client_address: String,
-    ui_events: PianobarUiEventSource,
-}
-
-impl PianobarWebsocketConnection {
-    pub fn new(
-        websocket: WebSocket,
-        client_address: Option<SocketAddr>,
-        ui_events: PianobarUiEventSource,
-    ) -> PianobarWebsocketConnection {
-        PianobarWebsocketConnection {
-            websocket,
-            client_address: match client_address {
-                Some(s) => s.to_string(),
-                None => "<UNKNOWN>".into(),
-            },
-            ui_events,
-        }
-    }
-
-    pub async fn run_with_error_handling(self) -> Result<()> {
-        let (mut tx, rx) = self.websocket.split();
-        log::info!("starting echo ...");
-        tx.send(warp::ws::Message::text("aaaa")).await?;
-        rx.forward(tx).await?;
-
-        Ok(())
-    }
-
-    pub async fn run(self) {
-        let client_address = self.client_address.clone();
-        log::info!("connected: {}", client_address);
-        if let Err(err) = self.run_with_error_handling().await {
-            log::info!("lost connection: {}", err);
-        }
-        log::info!("disconnected: {}", client_address);
     }
 }

@@ -1,6 +1,7 @@
 mod config;
 mod event_receiver;
 mod websocket;
+mod websocket_connection;
 
 use anyhow::Result;
 use config::Config;
