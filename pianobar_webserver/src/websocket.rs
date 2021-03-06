@@ -1,7 +1,8 @@
 use crate::event_receiver::{PianobarUiEventSource, PianobarUiEventSourceCreator};
-use futures::StreamExt;
+use anyhow::Result;
+use futures::{SinkExt, StreamExt};
 use log;
-use std::net::SocketAddr;
+use std::{borrow::Borrow, net::SocketAddr};
 use warp::ws::WebSocket;
 use warp::{Filter, Rejection, Reply};
 
@@ -71,15 +72,21 @@ impl PianobarWebsocketConnection {
         }
     }
 
-    pub async fn run(self) {
-        log::info!("connected: {}", self.client_address);
-        let (tx, rx) = self.websocket.split();
+    pub async fn run_with_error_handling(self) -> Result<()> {
+        let (mut tx, rx) = self.websocket.split();
         log::info!("starting echo ...");
-        if let Err(err) = rx.forward(tx).await {
-            match err {
-                _ => log::info!("lost connection: {}", err),
-            };
+        tx.send(warp::ws::Message::text("aaaa")).await?;
+        rx.forward(tx).await?;
+
+        Ok(())
+    }
+
+    pub async fn run(self) {
+        let client_address = self.client_address.clone();
+        log::info!("connected: {}", client_address);
+        if let Err(err) = self.run_with_error_handling().await {
+            log::info!("lost connection: {}", err);
         }
-        log::info!("disconnected: {}", self.client_address);
+        log::info!("disconnected: {}", client_address);
     }
 }
