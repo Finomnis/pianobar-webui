@@ -26,18 +26,15 @@ async fn main() -> Result<()> {
     // GET /hello/warp => 200 OK with body "Hello, warp!"
     let hello = warp::path!("hello" / String).map(|name| format!("Hello, {}!", name));
 
+    // Create Websocket route
     let websocket_route = websocket.create_route("ws");
-    // let websocket_route = warp::path!("ws")
-    //     .and(warp::ws())
-    //     .and(warp::addr::remote())
-    //     .and_then(handler);
 
-    let routes = hello
-        .or(websocket_route)
-        .with(warp::cors().allow_any_origin());
+    // Merge all routes
+    let routes = hello.or(websocket_route);
 
+    // Create the webserver task
     let webserver_task = async move {
-        warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
+        warp::serve(routes).run(([0, 0, 0, 0], 3030)).await;
         Ok(())
     };
 

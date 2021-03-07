@@ -58,12 +58,12 @@ impl PianobarWebsocketConnection {
             if value.is_close() {
                 if let Some((code, message)) = value.close_frame() {
                     if message.is_empty() {
-                        log::info!("closed with code {}", code);
+                        log::debug!("closed with code {}", code);
                     } else {
-                        log::info!("closed with code {}: {}", code, message);
+                        log::debug!("closed with code {}: {}", code, message);
                     }
                 } else {
-                    log::info!("closed without code");
+                    log::debug!("closed without code");
                 }
                 // Send will fail, but triggering the send command again
                 // is necessary to enable proper websocket shutdown
@@ -98,7 +98,7 @@ impl PianobarWebsocketConnection {
                 }
             }
         }
-        log::info!("send task ended");
+        log::debug!("send task ended");
     }
 
     async fn send_ui_event(
@@ -158,7 +158,7 @@ impl PianobarWebsocketConnection {
         ));
 
         // Send welcome message
-        log::info!("send welcome message ...");
+        log::debug!("send welcome message ...");
         self.send_welcome_message(ui_events.ui_initial_state, &send_queue)
             .await?;
 
