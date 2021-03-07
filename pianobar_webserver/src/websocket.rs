@@ -24,8 +24,8 @@ impl PianobarWebsocket {
         ui_events: PianobarUiEventSource,
     ) -> std::result::Result<impl Reply, Rejection> {
         Ok(ws.on_upgrade(move |socket| {
-            let client = PianobarWebsocketConnection::new(addr, ui_events);
-            client.run(socket)
+            let client = PianobarWebsocketConnection::new(addr);
+            client.run(socket, ui_events)
         }))
     }
 

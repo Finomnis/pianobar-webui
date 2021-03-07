@@ -1,5 +1,4 @@
-use crate::event_receiver::PianobarUiEvent;
-use crate::event_receiver::PianobarUiEventSource;
+use crate::event_receiver::{PianobarUiEvent, PianobarUiEventSource, PianobarUiState};
 
 use anyhow::{self, bail, Result};
 use futures::stream::{SplitSink, SplitStream};
@@ -7,34 +6,29 @@ use futures::{SinkExt, StreamExt};
 use jsonrpc_core as jsonrpc;
 use serde_json as json;
 use std::net::SocketAddr;
-use tokio::sync::mpsc;
+use tokio::sync::{broadcast, mpsc};
 use warp::ws::{Message, WebSocket};
 
 // use futures::FutureExt;
 
 pub struct PianobarWebsocketConnection {
     client_address: String,
-    ui_events: PianobarUiEventSource,
 }
 
 impl PianobarWebsocketConnection {
-    pub fn new(
-        client_address: Option<SocketAddr>,
-        ui_events: PianobarUiEventSource,
-    ) -> PianobarWebsocketConnection {
+    pub fn new(client_address: Option<SocketAddr>) -> PianobarWebsocketConnection {
         PianobarWebsocketConnection {
             client_address: match client_address {
                 Some(s) => s.to_string(),
                 None => "<UNKNOWN>".into(),
             },
-            ui_events,
         }
     }
 
-    pub async fn run(self, websocket: WebSocket) {
+    pub async fn run(self, websocket: WebSocket, ui_events: PianobarUiEventSource) {
         let client_address = self.client_address.clone();
         log::info!("connected: {}", client_address);
-        if let Err(err) = self.run_with_error_handling(websocket).await {
+        if let Err(err) = self.run_with_error_handling(websocket, ui_events).await {
             log::warn!("lost connection: {}", err);
         }
         log::info!("disconnected: {}", client_address);
@@ -107,28 +101,53 @@ impl PianobarWebsocketConnection {
         log::info!("send task ended");
     }
 
-    async fn send_welcome_message(
+    async fn send_ui_event(
         &self,
+        event: PianobarUiEvent,
         send_queue: &mpsc::UnboundedSender<Message>,
     ) -> Result<()> {
-        let welcome_message = jsonrpc::Notification {
+        let message = jsonrpc::Notification {
             jsonrpc: Some(jsonrpc::Version::V2),
             method: "ui_event".to_string(),
-            params: jsonrpc::Params::Map(
-                PianobarUiEvent {
-                    command: "websocket_welcome".to_string(),
-                    state: self.ui_events.ui_initial_state.clone(),
-                }
-                .into(),
-            ),
+            params: jsonrpc::Params::Map(event.into()),
         };
 
-        let message = json::to_string(&welcome_message)?;
-        send_queue.send(Message::text(message))?;
+        send_queue.send(Message::text(json::to_string(&message)?))?;
         Ok(())
     }
 
-    async fn run_with_error_handling(self, websocket: WebSocket) -> Result<()> {
+    async fn send_welcome_message(
+        &self,
+        ui_initial_state: PianobarUiState,
+        send_queue: &mpsc::UnboundedSender<Message>,
+    ) -> Result<()> {
+        self.send_ui_event(
+            PianobarUiEvent {
+                command: "websocket_welcome".to_string(),
+                state: ui_initial_state,
+            },
+            send_queue,
+        )
+        .await
+    }
+
+    async fn events_task(
+        &self,
+        mut ui_events: broadcast::Receiver<PianobarUiEvent>,
+        send_queue: &mpsc::UnboundedSender<Message>,
+    ) -> Result<()> {
+        loop {
+            let ui_event = ui_events.recv().await?;
+            log::debug!("send ui event ...");
+            self.send_ui_event(ui_event, send_queue).await?;
+        }
+    }
+
+    async fn run_with_error_handling(
+        self,
+        websocket: WebSocket,
+        ui_events: PianobarUiEventSource,
+    ) -> Result<()> {
         let (websocket_sender, websocket_receiver) = websocket.split();
 
         // Move sender to separate task and wrap in queue
@@ -140,14 +159,19 @@ impl PianobarWebsocketConnection {
 
         // Send welcome message
         log::info!("send welcome message ...");
-        self.send_welcome_message(&send_queue).await?;
+        self.send_welcome_message(ui_events.ui_initial_state, &send_queue)
+            .await?;
 
         // Start receive task
         let receive_task = self.receive_task(websocket_receiver, &send_queue);
 
         // Start event tasks
+        let events_task = self.events_task(ui_events.ui_events, &send_queue);
 
         // Wait until the first task finished
-        tokio::select!(ret = receive_task=>ret)
+        tokio::select!(
+            ret = receive_task => ret,
+            ret = events_task => ret,
+        )
     }
 }
