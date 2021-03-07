@@ -34,6 +34,11 @@ impl PianobarWebsocketConnection {
         log::info!("disconnected: {}", client_address);
     }
 
+    /// Processes a text message sent by the connected user
+    ///
+    /// * `message` - The content of the message
+    /// * `send_queue` - The queue object used to send responses
+    ///
     async fn handle_message(
         &self,
         message: &str,
