@@ -102,7 +102,7 @@ impl PianobarEventReceiver {
                 }
             };
 
-            log::info!("Event received from {}", addr);
+            log::debug!("Event received from {}", addr);
             let event = match json::from_slice::<PianobarUiEvent>(&message) {
                 Ok(a) => a,
                 Err(err) => {
