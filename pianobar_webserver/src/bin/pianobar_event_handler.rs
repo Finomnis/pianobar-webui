@@ -1,5 +1,4 @@
 use anyhow::{anyhow, Result};
-use serde::Serialize;
 use serde_json as json;
 use std::io;
 use std::io::prelude::*;
