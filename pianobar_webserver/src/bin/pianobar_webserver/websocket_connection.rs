@@ -22,7 +22,7 @@ impl PianobarWebsocketConnection {
         PianobarWebsocketConnection {
             client_address: match client_address {
                 Some(s) => s.to_string(),
-                None => "<UNKNOWN>".into(),
+                None => "<UNKNOWN>".to_string(),
             },
             json_rpc_websocket: JsonRpcWebsocket::new(websocket),
         }
