@@ -1,5 +1,5 @@
 use anyhow::{self, bail, Result};
-use futures::stream::{SplitSink, SplitStream};
+use futures::stream::SplitStream;
 use futures::{SinkExt, StreamExt};
 use jsonrpc_core as jsonrpc;
 use serde_json as json;
@@ -15,34 +15,27 @@ pub struct JsonRpcWebsocket {
 
 impl JsonRpcWebsocket {
     pub fn new(websocket: WebSocket) -> JsonRpcWebsocket {
-        let (websocket_sender, websocket_receiver) = websocket.split();
+        let (mut websocket_sender, websocket_receiver) = websocket.split();
 
-        // Move sender to separate task and wrap in queue
-        let (send_queue, send_queue_receiver) = mpsc::unbounded_channel::<warp::ws::Message>();
-        tokio::task::spawn(JsonRpcWebsocket::send_task(
-            send_queue_receiver,
-            websocket_sender,
-        ));
+        // Move sender to separate task and abstract it behind an mpsc queue
+        let (send_queue, mut send_queue_receiver) = mpsc::unbounded_channel::<warp::ws::Message>();
+        tokio::task::spawn(async move {
+            while let Some(item) = send_queue_receiver.recv().await {
+                let is_close = item.is_close();
+                if let Err(err) = websocket_sender.send(item).await {
+                    if !is_close {
+                        log::warn!("send failed: {}", err);
+                    }
+                    break;
+                }
+            }
+            log::debug!("send task ended");
+        });
 
         JsonRpcWebsocket {
             send_queue,
             websocket_receiver: Arc::new(Mutex::new(websocket_receiver)),
         }
-    }
-
-    async fn send_task(
-        mut send_queue_receiver: mpsc::UnboundedReceiver<Message>,
-        mut websocket_sender: SplitSink<WebSocket, Message>,
-    ) {
-        while let Some(item) = send_queue_receiver.recv().await {
-            let is_close = item.is_close();
-            if let Err(err) = websocket_sender.send(item).await {
-                if !is_close {
-                    log::warn!("send failed: {}", err);
-                }
-            }
-        }
-        log::debug!("send task ended");
     }
 
     pub fn send_notification(&self, method: &str, params: jsonrpc::Params) -> Result<()> {
