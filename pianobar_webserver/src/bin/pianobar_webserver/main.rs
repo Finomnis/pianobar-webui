@@ -23,18 +23,27 @@ async fn main() -> Result<()> {
     info!("Create websocket ...");
     let websocket = PianobarWebsocket::new(event_receiver.get_event_source_creator());
 
-    // GET /hello/warp => 200 OK with body "Hello, warp!"
-    let hello = warp::path!("hello" / String).map(|name| format!("Hello, {}!", name));
-
     // Create Websocket route
     let websocket_route = websocket.create_route("ws");
 
-    // Merge all routes
-    let routes = hello.or(websocket_route);
+    // Create web app route to serve static web app files if nothing else matches
+    let webpage_route = config
+        .webpage_folder
+        .clone()
+        .map(|webpage_folder| warp::get().and(warp::fs::dir(webpage_folder)));
 
     // Create the webserver task
     let webserver_task = async move {
-        warp::serve(routes).run(([0, 0, 0, 0], 3030)).await;
+        let addr = ([0, 0, 0, 0], config.port);
+        if let Some(webpage_route) = webpage_route {
+            log::debug!("Serve websocket and webpage ...");
+            warp::serve(websocket_route.or(webpage_route))
+                .run(addr)
+                .await;
+        } else {
+            log::debug!("Serve websocket ...");
+            warp::serve(websocket_route).run(addr).await;
+        }
         Ok(())
     };
 
