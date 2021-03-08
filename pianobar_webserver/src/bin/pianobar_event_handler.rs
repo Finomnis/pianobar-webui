@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use serde_json as json;
 use std::io;
 use std::io::prelude::*;
@@ -11,11 +11,12 @@ use pianobar_webserver::ui_state::{PianobarUiEvent, PianobarUiState};
 fn main() -> Result<()> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug")).init();
 
-    let command = std::env::args()
-        .into_iter()
-        .skip(1)
-        .next()
-        .ok_or(anyhow!("Command line argument expected!"))?;
+    let command_vec = std::env::args().into_iter().skip(1).collect::<Vec<_>>();
+
+    let command = match command_vec.as_slice() {
+        [s] => s.clone(),
+        _ => bail!("Invalid number of arguments!"),
+    };
 
     let mut state = PianobarUiState::new();
 
