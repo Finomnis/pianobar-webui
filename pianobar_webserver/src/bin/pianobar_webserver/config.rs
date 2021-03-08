@@ -1,4 +1,3 @@
-//use pianobar_webserver::default_config;
 use const_format::formatcp as const_format;
 use pianobar_webserver::default_config;
 use structopt::StructOpt;

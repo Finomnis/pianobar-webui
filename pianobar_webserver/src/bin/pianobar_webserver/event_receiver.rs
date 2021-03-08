@@ -1,28 +1,12 @@
 use crate::config::Config;
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
 use serde_json as json;
 use std::net::Ipv4Addr;
 use tokio::io::AsyncReadExt;
 use tokio::net::TcpListener;
 use tokio::sync::{broadcast, watch};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct PianobarUiEvent {
-    pub command: String,
-    pub state: PianobarUiState,
-}
-
-impl From<PianobarUiEvent> for json::Map<String, json::Value> {
-    fn from(event: PianobarUiEvent) -> Self {
-        let mut result = json::Map::new();
-        result.insert("command".to_string(), json::Value::String(event.command));
-        result.insert("state".to_string(), json::Value::Object(event.state));
-        result
-    }
-}
-
-pub type PianobarUiState = json::Map<String, json::Value>;
+pub use pianobar_webserver::ui_state::{PianobarUiEvent, PianobarUiState};
 
 #[derive(Clone)]
 pub struct PianobarUiEventSourceCreator {

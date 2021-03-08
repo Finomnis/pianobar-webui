@@ -4,6 +4,8 @@ mod websocket;
 mod websocket_connection;
 mod websocket_json_rpc;
 
+use std::net::Ipv4Addr;
+
 use anyhow::Result;
 use config::Config;
 use event_receiver::PianobarEventReceiver;
@@ -35,7 +37,7 @@ async fn main() -> Result<()> {
 
     // Create the webserver task
     let webserver_task = async move {
-        let addr = ([0, 0, 0, 0], config.port);
+        let addr = (Ipv4Addr::UNSPECIFIED, config.port);
         if let Some(webpage_route) = webpage_route {
             log::debug!("Serve websocket and webpage ...");
             warp::serve(websocket_route.or(webpage_route))
