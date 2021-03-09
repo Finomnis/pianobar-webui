@@ -16,9 +16,19 @@ use websocket::PianobarWebsocket;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
-
+    // Read configuration from command line arguments
     let config = Config::from_args();
+
+    // Initialize logger
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(
+        match config.verbose {
+            0 => "warn",
+            1 => "info",
+            2 => "debug",
+            _ => "trace",
+        },
+    ))
+    .init();
 
     info!("Create event handler ...");
     let event_receiver = PianobarEventReceiver::new(&config);
