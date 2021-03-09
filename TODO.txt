@@ -1,0 +1,9 @@
+Bootstrap stories:
+- implement event handler in rust
+- bootstrap web ui
+- write pianobar wrapper/controller
+- implement json-rpc (jsonrpc_core)
+
+Continued stories:
+<implement ui features>
+<implement state display>
