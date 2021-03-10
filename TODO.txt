@@ -1,7 +1,7 @@
 Bootstrap stories:
 + implement event handler in rust
-- bootstrap web ui
-    - typescript
+| bootstrap web ui
+    + typescript
     - rpc-websocket
     - ui state -> redux
 - write pianobar wrapper/controller

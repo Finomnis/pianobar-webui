@@ -1,8 +1,10 @@
 import { combineReducers } from "redux";
-import pianobarReducer from "./pianobar/pianobarSlice";
+import pianobarUiReducer from "./pianobar_ui/pianobarUiSlice";
 import counterReducer from "./counter/counterSlice";
 
 export default combineReducers({
     counter: counterReducer,
-    pianobar: pianobarReducer,
+    pianobar: combineReducers({
+        ui: pianobarUiReducer,
+    }),
 });
