@@ -1,9 +1,12 @@
 Bootstrap stories:
-- implement event handler in rust
++ implement event handler in rust
 - bootstrap web ui
+    - typescript
+    - rpc-websocket
+    - ui state -> redux
 - write pianobar wrapper/controller
-- implement json-rpc (jsonrpc_core)
+- implement json-rpc functions
 
 Continued stories:
 <implement ui features>
-<implement state display>
+- implement state display
