@@ -5,8 +5,8 @@ import {
     increment,
     incrementByAmount,
     incrementAsync,
-    selectCount,
 } from "./counterSlice";
+import { selectCount } from "./counterSelectors";
 import styles from "./Counter.module.css";
 
 export function Counter() {

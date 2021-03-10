@@ -27,7 +27,4 @@ export const { increment, decrement, incrementByAmount } = counterSlice.actions;
 export default counterSlice.reducer;
 
 // Saga actions
-export const incrementAsync = createAction("counter/incrementAsync");
-
-// Selectors
-export const selectCount = (state) => state.counter.value;
+export const incrementAsync = createAction<number>("counter/incrementAsync");

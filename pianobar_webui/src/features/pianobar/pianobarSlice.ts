@@ -15,6 +15,3 @@ export const counterSlice = createSlice({
 // Slice exports
 export const { updateUi } = counterSlice.actions;
 export default counterSlice.reducer;
-
-// Selectors
-export const selectUi = (state) => state.pianobar.ui;

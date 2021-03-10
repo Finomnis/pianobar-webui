@@ -1,5 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
 import createSagaMiddleware from "redux-saga";
+import { useDispatch } from "react-redux";
 
 import rootSaga from "../features/rootSaga";
 import rootReducer from "../features/rootReducer";
@@ -19,3 +20,8 @@ const store = configureStore({
 sagaMiddleware.run(rootSaga);
 
 export default store;
+
+// Typescript stuff
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
+export const useAppDispatch = () => useDispatch<AppDispatch>();
