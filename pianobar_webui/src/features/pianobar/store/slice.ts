@@ -1,18 +1,34 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 const slice = createSlice({
     name: "pianobar",
     initialState: {
         ui: {},
+        websocket: {
+            connected: false,
+        },
     },
     reducers: {
-        uiEventReceived: (s, action) => {
-            let { state } = action.payload;
-            s.ui = state;
+        uiEventReceived: (
+            state,
+            action: PayloadAction<{ state: object; command: string }>
+        ) => {
+            state.ui = action.payload.state;
+        },
+        websocketConnectionOpened: (state) => {
+            state.websocket.connected = true;
+        },
+        websocketConnectionClosed: (state) => {
+            state.websocket.connected = false;
         },
     },
 });
 
 // Slice exports
-export const { uiEventReceived } = slice.actions;
+export const {
+    uiEventReceived,
+    websocketConnectionOpened,
+    websocketConnectionClosed,
+} = slice.actions;
+
 export default slice.reducer;
