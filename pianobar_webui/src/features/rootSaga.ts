@@ -1,12 +1,8 @@
-import { call, all } from "redux-saga/effects";
+import { all } from "redux-saga/effects";
 
 import counterSaga from "./counter/counterSaga";
-import pianobarWebsocketSaga from "./pianobar_backend/pianobarWebsocketSaga";
-
-function* helloSaga() {
-    yield call(console.log, "Hello Sagas!");
-}
+import { pianobarWebsocketSaga } from "./pianobar/websocket/websocket";
 
 export default function* rootSaga() {
-    yield all([helloSaga(), counterSaga(), pianobarWebsocketSaga()]);
+    yield all([counterSaga(), pianobarWebsocketSaga()]);
 }
