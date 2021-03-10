@@ -11,7 +11,7 @@ const slice = createSlice({
     reducers: {
         uiEventReceived: (
             state,
-            action: PayloadAction<{ state: object; command: string }>
+            action: PayloadAction<{ command: string; state: object }>
         ) => {
             state.ui = action.payload.state;
         },
