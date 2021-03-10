@@ -1,15 +1,15 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 export const counterSlice = createSlice({
-  name: "pianobar",
-  initialState: {
-    ui: {},
-  },
-  reducers: {
-    updateUi: (state, action) => {
-      state.ui = action.payload;
+    name: "pianobar",
+    initialState: {
+        ui: {},
     },
-  },
+    reducers: {
+        updateUi: (state, action) => {
+            state.ui = action.payload;
+        },
+    },
 });
 
 // Slice exports

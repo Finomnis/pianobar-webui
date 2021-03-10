@@ -9,10 +9,10 @@ const sagaMiddleware = createSagaMiddleware();
 
 // Initialize redux store
 const store = configureStore({
-  reducer: rootReducer,
-  middleware: (defaultMiddleware) =>
-    defaultMiddleware({ thunk: false }).concat(sagaMiddleware),
-  devTools: process.env.NODE_ENV !== "production",
+    reducer: rootReducer,
+    middleware: (defaultMiddleware) =>
+        defaultMiddleware({ thunk: false }).concat(sagaMiddleware),
+    devTools: process.env.NODE_ENV !== "production",
 });
 
 // Start saga
