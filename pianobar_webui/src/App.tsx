@@ -1,4 +1,3 @@
-import "./App.css";
 import MainWindow from "./features/mainwindow/MainWindow";
 
 function App() {
