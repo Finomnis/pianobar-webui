@@ -24,6 +24,8 @@ impl PianobarController {
         mut pianobar_stream: ChildStdout,
     ) -> Result<()> {
         loop {
+            // TODO add custom message format to pianobar config,
+            // parse stream into messages
             let mut output = [0u8; 100000];
             let num_read = pianobar_stream.read(&mut output).await?;
             if num_read == 0 {
@@ -51,6 +53,7 @@ impl PianobarController {
     async fn control_logic(&self, mut pianobar_stdout: UnboundedReceiver<String>) -> Result<()> {
         loop {
             loop {
+                // TODO process remote procedure calls somehow
                 let message = pianobar_stdout
                     .recv()
                     .await
@@ -87,7 +90,7 @@ impl PianobarController {
             .ok_or(anyhow!("Unable to get pianobar stdin."))?;
         let pianobar_stdout_stream = pianobar_process
             .stdout
-            .ok_or(anyhow!("Unable to get pianobar stdin."))?;
+            .ok_or(anyhow!("Unable to get pianobar stdout."))?;
 
         let (pianobar_stdout_sink, pianobar_stdout) = mpsc::unbounded_channel::<String>();
         let stdout_task = self.process_stdout(pianobar_stdout_sink, pianobar_stdout_stream);
