@@ -15,4 +15,7 @@ pub struct Config {
 
     #[structopt(short, long, parse(from_occurrences), help = "Increases verbosity")]
     pub verbose: usize,
+
+    #[structopt(long, help="Changes the pianobar executable path. For custom pianobar installations that are not in PATH.", default_value=default_config::PIANOBAR_COMMAND)]
+    pub pianobar_path: String,
 }

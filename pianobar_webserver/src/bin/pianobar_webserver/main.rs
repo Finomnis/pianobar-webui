@@ -1,5 +1,7 @@
 mod config;
 mod event_receiver;
+mod pianobar_controller;
+mod signal_handler;
 mod websocket;
 
 use std::net::Ipv4Addr;
@@ -8,6 +10,8 @@ use anyhow::Result;
 use config::Config;
 use event_receiver::PianobarEventReceiver;
 use log::info;
+use pianobar_controller::PianobarController;
+use signal_handler::handle_interrupt_signals;
 use structopt::StructOpt;
 use warp::Filter;
 use websocket::PianobarWebsocket;
@@ -30,6 +34,9 @@ async fn main() -> Result<()> {
 
     info!("Create event handler ...");
     let event_receiver = PianobarEventReceiver::new(&config);
+
+    info!("Create pianobar controller ...");
+    let pianobar_controller = PianobarController::new(&config.pianobar_path);
 
     info!("Create websocket ...");
     let websocket = PianobarWebsocket::new(event_receiver.get_event_source_creator());
@@ -59,7 +66,12 @@ async fn main() -> Result<()> {
     };
 
     info!("Starting tasks ...");
-    tokio::try_join!(webserver_task, event_receiver.run())?;
+    tokio::try_join!(
+        webserver_task,
+        event_receiver.run(),
+        pianobar_controller.run(),
+        handle_interrupt_signals(),
+    )?;
 
     info!("Program ended.");
     Ok(())
