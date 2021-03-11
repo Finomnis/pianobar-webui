@@ -1,14 +1,11 @@
-import { connect } from "react-redux";
-import { RootState } from "../../app/store";
+import { useSelector } from "react-redux";
+import { selectPianobarRawUiState } from "../pianobar/store/selector";
+import CoverArt from "./CoverArt";
 
-type MainWindowProps = {
-    uiState: object;
-    connected: boolean;
-    coverArt: string;
-};
+const MainWindow = () => {
+    let uiState = useSelector(selectPianobarRawUiState);
 
-const MainWindow = (props: MainWindowProps) => {
-    let stateList = Object.entries(props.uiState).map(([key, value]) => (
+    let stateList = Object.entries(uiState).map(([key, value]) => (
         <tr key={key}>
             <td>{key}</td>
             <td>{String(value)}</td>
@@ -20,28 +17,9 @@ const MainWindow = (props: MainWindowProps) => {
             <table>
                 <tbody>{stateList}</tbody>
             </table>
-            <img
-                src={props.coverArt}
-                alt="Unable to load cover art."
-                width="400px"
-                height="400px"
-            ></img>
+            <CoverArt width="400px" height="400px" />
         </div>
     );
 };
 
-const mapStateToProps = (state: RootState /*, ownProps*/): MainWindowProps => {
-    let coverArt = "";
-    if ("coverArt" in state.pianobar.ui) {
-        coverArt = state.pianobar.ui["coverArt"];
-    }
-    return {
-        uiState: state.pianobar.ui,
-        connected: state.pianobar.websocket.connected,
-        coverArt: coverArt,
-    };
-};
-
-const mapDispatchToProps = {};
-
-export default connect(mapStateToProps, mapDispatchToProps)(MainWindow);
+export default MainWindow;
