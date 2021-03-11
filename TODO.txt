@@ -7,6 +7,9 @@ Bootstrap stories:
 - write pianobar wrapper/controller
 - implement json-rpc functions
 
+Impediments:
+- killing pianobar seems to lock up the server (only ctrl-D works, which is very weird)
+
 Continued stories:
 <implement ui features>
 - implement state display
