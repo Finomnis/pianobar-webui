@@ -66,11 +66,11 @@ async fn main() -> Result<()> {
     };
 
     info!("Starting tasks ...");
-    tokio::try_join!(
-        webserver_task,
-        event_receiver.run(),
-        pianobar_controller.run(),
-        handle_interrupt_signals(),
+    tokio::select!(
+        e = webserver_task => e,
+        e = event_receiver.run() => e,
+        e = pianobar_controller.run() => e,
+        e = handle_interrupt_signals() => e,
     )?;
 
     info!("Program ended.");
