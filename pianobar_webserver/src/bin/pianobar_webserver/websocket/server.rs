@@ -1,6 +1,6 @@
 use crate::event_receiver::{PianobarUiEventSource, PianobarUiEventSourceCreator};
 
-use crate::websocket_connection::PianobarWebsocketConnection;
+use super::connection::PianobarWebsocketConnection;
 
 use std::net::SocketAddr;
 use warp::{Filter, Rejection, Reply};

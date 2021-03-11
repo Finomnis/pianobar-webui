@@ -1,6 +1,6 @@
 use crate::event_receiver::{PianobarUiEvent, PianobarUiEventSource, PianobarUiState};
 
-use crate::websocket_json_rpc::JsonRpcWebsocket;
+use super::json_rpc::JsonRpcWebsocket;
 use anyhow::{self, Result};
 use jsonrpc_core as jsonrpc;
 use std::net::SocketAddr;

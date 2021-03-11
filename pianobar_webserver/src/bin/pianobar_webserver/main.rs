@@ -1,8 +1,6 @@
 mod config;
 mod event_receiver;
 mod websocket;
-mod websocket_connection;
-mod websocket_json_rpc;
 
 use std::net::Ipv4Addr;
 
