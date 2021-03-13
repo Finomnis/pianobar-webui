@@ -73,8 +73,9 @@ impl PianobarController {
             let mut stdin = tokio::io::stdin();
             let num_read = stdin.read(&mut buffer).await?;
             if num_read == 0 {
-                // TODO don't kill the server when stdin closes, might be normal for a server process
-                bail!("stdin closed!");
+                // Don't kill the server when stdin closes, might be normal for a server process
+                log::debug!("Stdin closed.");
+                return Ok(());
             }
             let message = std::str::from_utf8(&buffer[..num_read])?.to_string();
             pianobar_stdin.send(message)?;
@@ -102,11 +103,13 @@ impl PianobarController {
         let (pianobar_stdin, pianobar_stdin_source) = mpsc::unbounded_channel::<String>();
         let stdin_task = self.process_stdin(pianobar_stdin_source, pianobar_stdin_stream);
 
-        tokio::select!(
-            e = self.control_logic(pianobar_stdout) => e,
-            e = self.stdin_forwarder(&pianobar_stdin) => e,
-            e = stdout_task => e,
-            e = stdin_task => e,
-        )
+        tokio::try_join!(
+            self.control_logic(pianobar_stdout),
+            self.stdin_forwarder(&pianobar_stdin),
+            stdout_task,
+            stdin_task,
+        )?;
+
+        bail!("All controller tasks ended unexpectedly.");
     }
 }
