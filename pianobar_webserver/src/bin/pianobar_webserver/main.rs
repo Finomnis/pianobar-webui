@@ -17,7 +17,21 @@ use warp::Filter;
 use websocket::PianobarWebsocket;
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() {
+    // Call exit(), because just ending main doesn't kill open threads
+    match main_with_result().await {
+        Ok(()) => {
+            log::info!("Program ended.");
+            std::process::exit(0);
+        }
+        Err(err) => {
+            log::error!("Program ended with error: {}", err);
+            std::process::exit(1);
+        }
+    }
+}
+
+async fn main_with_result() -> Result<()> {
     // Read configuration from command line arguments
     let config = Config::from_args();
 
@@ -71,8 +85,5 @@ async fn main() -> Result<()> {
         e = event_receiver.run() => e,
         e = pianobar_controller.run() => e,
         e = handle_interrupt_signals() => e,
-    )?;
-
-    info!("Program ended.");
-    Ok(())
+    )
 }
