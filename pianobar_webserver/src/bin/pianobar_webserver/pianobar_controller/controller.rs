@@ -1,18 +1,16 @@
+use super::manual_controller::manual_controller;
+use super::pianobar_stdout::{process_pianobar_output, PianobarMessage};
+use pianobar_webserver::utils::cancel_signal::CancelSignal;
+
 use anyhow::{anyhow, bail, Result};
 use log;
-use pianobar_webserver::utils::cancel_signal::CancelSignal;
 use std::{process::Stdio, sync::Arc};
 use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
-    process::{Child, ChildStdin, ChildStdout, Command},
+    io::AsyncWriteExt,
+    process::{Child, ChildStdin, Command},
     sync::broadcast,
     sync::Mutex,
 };
-
-#[derive(Clone, Debug)]
-enum PianobarMessage {
-    UnknownMessage(String),
-}
 
 /// Provides an interface that can be used by function calls to send
 /// commands to the pianobar process.
@@ -21,7 +19,7 @@ enum PianobarMessage {
 /// important that only one person can communicate with the process
 /// at any given time. This is ensured by wrapping this struct in a
 /// mutex.
-struct PianobarActor {
+pub struct PianobarActor {
     pianobar_stdin: ChildStdin,
 }
 
@@ -52,7 +50,7 @@ impl PianobarActor {
 pub struct PianobarController {
     _pianobar_process: Child,
     // Wrapped in Mutex to prevent multiple people from sending simultaneously.
-    pianobar_actor: Mutex<PianobarActor>,
+    pianobar_actor: Arc<Mutex<PianobarActor>>,
     pianobar_received_messages: broadcast::Sender<PianobarMessage>,
     cancel_signal: Arc<CancelSignal>,
 }
@@ -85,19 +83,14 @@ impl PianobarController {
         let cancel_signal_setter = cancel_signal.clone();
         let pianobar_received_messages_clone = pianobar_received_messages.clone();
         tokio::spawn(async move {
-            match PianobarController::process_stdout(
-                pianobar_stdout,
-                pianobar_received_messages_clone,
-            )
-            .await
-            {
+            match process_pianobar_output(pianobar_stdout, pianobar_received_messages_clone).await {
                 Ok(()) => cancel_signal_setter.set("Pianobar stdout task closed.".to_string()),
                 Err(err) => cancel_signal_setter.set(format!("{}", err)),
             };
         });
 
         // Create the pianobar actor
-        let pianobar_actor = Mutex::new(PianobarActor::new(pianobar_stdin));
+        let pianobar_actor = Arc::new(Mutex::new(PianobarActor::new(pianobar_stdin)));
 
         // Create the controller object
         Ok(PianobarController {
@@ -106,33 +99,6 @@ impl PianobarController {
             pianobar_received_messages,
             cancel_signal,
         })
-    }
-
-    async fn process_stdout(
-        mut pianobar_stream: ChildStdout,
-        pianobar_received_messages: broadcast::Sender<PianobarMessage>,
-    ) -> Result<()> {
-        loop {
-            // TODO add custom message format to pianobar config,
-            // parse stream into messages
-            let mut output = [0u8; 100000];
-            let num_read = pianobar_stream.read(&mut output).await?;
-            if num_read == 0 {
-                bail!("pianobar program closed!");
-            }
-            let msg = std::str::from_utf8(&output[..num_read])?.to_string();
-
-            log::debug!("\n{}", msg);
-
-            match pianobar_received_messages.send(PianobarMessage::UnknownMessage(msg)) {
-                Ok(num_receivers) => {
-                    log::debug!("Sent pianobar message to {} listeners.", num_receivers)
-                }
-                Err(broadcast::error::SendError(msg)) => {
-                    log::error!("No receiver for message: {:?}", msg);
-                }
-            };
-        }
     }
 
     async fn control_logic(&self) -> Result<()> {
@@ -160,25 +126,14 @@ impl PianobarController {
         }
     }
 
-    async fn stdin_forwarder(&self) -> Result<()> {
-        loop {
-            let mut buffer = [0u8; 1000];
-            let mut stdin = tokio::io::stdin();
-            let num_read = stdin.read(&mut buffer).await?;
-            if num_read == 0 {
-                // Don't kill the server when stdin closes, might be normal for a server process
-                log::debug!("Stdin closed.");
-                return Ok(());
-            }
-            let message = std::str::from_utf8(&buffer[..num_read])?.to_string();
-            self.pianobar_actor.lock().await.write(&message).await?;
-        }
+    pub async fn take_actor(&self) -> tokio::sync::MutexGuard<'_, PianobarActor> {
+        self.pianobar_actor.lock().await
     }
 
     pub async fn run(&self) -> Result<()> {
         tokio::try_join!(
             self.control_logic(),
-            self.stdin_forwarder(),
+            manual_controller(self),
             self.cancel_signal.wait(),
         )?;
 
