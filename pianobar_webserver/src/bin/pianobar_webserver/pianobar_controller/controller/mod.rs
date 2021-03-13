@@ -1,4 +1,4 @@
 mod controller;
-mod plugins;
+mod messages;
 
 pub use controller::PianobarController;

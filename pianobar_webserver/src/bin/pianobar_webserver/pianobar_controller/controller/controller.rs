@@ -1,5 +1,5 @@
-use super::manual_controller::manual_controller;
-use super::pianobar_stdout::{process_pianobar_output, PianobarMessage};
+use super::super::plugins;
+use super::messages::{parse_pianobar_messages, PianobarMessage};
 use pianobar_webserver::utils::cancel_signal::CancelSignal;
 
 use anyhow::{anyhow, bail, Result};
@@ -83,7 +83,7 @@ impl PianobarController {
         let cancel_signal_setter = cancel_signal.clone();
         let pianobar_received_messages_clone = pianobar_received_messages.clone();
         tokio::spawn(async move {
-            match process_pianobar_output(pianobar_stdout, pianobar_received_messages_clone).await {
+            match parse_pianobar_messages(pianobar_stdout, pianobar_received_messages_clone).await {
                 Ok(()) => cancel_signal_setter.set("Pianobar stdout task closed.".to_string()),
                 Err(err) => cancel_signal_setter.set(format!("{}", err)),
             };
@@ -101,42 +101,16 @@ impl PianobarController {
         })
     }
 
-    async fn control_logic(&self) -> Result<()> {
-        let mut receiver = self.pianobar_received_messages.subscribe();
-        loop {
-            loop {
-                // TODO process remote procedure calls somehow
-                // - don't process them from a queue, instead let them operate on
-                // the server directly. Use a mutex for synchronization.
-                // Might want to use the receive stream mutex directly.
-                // (that way the thread can be killed without blocking everything)
-                let message = match receiver.recv().await {
-                    Ok(msg) => msg,
-                    Err(broadcast::error::RecvError::Lagged(num)) => {
-                        log::warn!("Missed {} messages", num);
-                        continue;
-                    }
-                    Err(broadcast::error::RecvError::Closed) => {
-                        bail!("Pianobar internal stdout queue closed.")
-                    }
-                };
-
-                log::debug!("Message: {:?}", message);
-            }
-        }
-    }
-
     pub async fn take_actor(&self) -> tokio::sync::MutexGuard<'_, PianobarActor> {
         self.pianobar_actor.lock().await
     }
 
-    pub async fn run(&self) -> Result<()> {
-        tokio::try_join!(
-            self.control_logic(),
-            manual_controller(self),
-            self.cancel_signal.wait(),
-        )?;
+    pub fn subscribe(&self) -> broadcast::Receiver<PianobarMessage> {
+        self.pianobar_received_messages.subscribe()
+    }
 
+    pub async fn run(&self) -> Result<()> {
+        tokio::try_join!(plugins::plugins(self), self.cancel_signal.wait())?;
         bail!("All controller tasks ended unexpectedly.");
     }
 }

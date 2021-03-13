@@ -6,7 +6,7 @@ pub enum PianobarMessage {
     UnknownMessage(String),
 }
 
-pub async fn process_pianobar_output(
+pub async fn parse_pianobar_messages(
     mut pianobar_stream: ChildStdout,
     pianobar_received_messages: broadcast::Sender<PianobarMessage>,
 ) -> Result<()> {
