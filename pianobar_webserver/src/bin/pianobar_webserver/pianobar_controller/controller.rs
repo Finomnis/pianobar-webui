@@ -1,11 +1,12 @@
 use anyhow::{anyhow, bail, Result};
 use log;
-use std::process::Stdio;
+use pianobar_webserver::utils::cancel_signal::CancelSignal;
+use std::{process::Stdio, sync::Arc};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
-    process::{ChildStdin, ChildStdout, Command},
+    process::{Child, ChildStdin, ChildStdout, Command},
     sync::broadcast,
-    sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
+    sync::Mutex,
 };
 
 #[derive(Clone, Debug)]
@@ -13,21 +14,104 @@ enum PianobarMessage {
     UnknownMessage(String),
 }
 
+/// Provides an interface that can be used by function calls to send
+/// commands to the pianobar process.
+///
+/// Solved as a separate struct instead of an mpsc, because it's
+/// important that only one person can communicate with the process
+/// at any given time. This is ensured by wrapping this struct in a
+/// mutex.
+struct PianobarActor {
+    pianobar_stdin: ChildStdin,
+}
+
+impl PianobarActor {
+    pub fn new(pianobar_stdin: ChildStdin) -> PianobarActor {
+        PianobarActor { pianobar_stdin }
+    }
+
+    pub async fn write(&mut self, message: &str) -> Result<()> {
+        // Get slice to send
+        let mut send_buffer = message.as_bytes();
+        while send_buffer.len() > 0 {
+            let num_sent = self.pianobar_stdin.write(send_buffer).await?;
+            if num_sent == 0 {
+                bail!("Unable to write to pianobar process");
+            }
+            // Remove the sent bytes from the slice
+            send_buffer = &send_buffer[num_sent..];
+        }
+
+        // Flush, to make sure messages without newlines get delivered
+        self.pianobar_stdin.flush().await?;
+
+        Ok(())
+    }
+}
+
 pub struct PianobarController {
-    pianobar_command: String,
+    _pianobar_process: Child,
+    // Wrapped in Mutex to prevent multiple people from sending simultaneously.
+    pianobar_actor: Mutex<PianobarActor>,
     pianobar_received_messages: broadcast::Sender<PianobarMessage>,
+    cancel_signal: Arc<CancelSignal>,
 }
 
 impl PianobarController {
-    pub fn new(pianobar_command: &str) -> PianobarController {
+    pub fn new(pianobar_command: &str) -> Result<PianobarController> {
+        // Start the pianobar process and get the handle to the stdin and stdout streams
+        log::info!("Start pianobar process ...");
+        let mut pianobar_process = Command::new(pianobar_command)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .kill_on_drop(true)
+            .spawn()?;
+        let pianobar_stdin = pianobar_process
+            .stdin
+            .take()
+            .ok_or(anyhow!("Unable to get pianobar stdin."))?;
+        let pianobar_stdout = pianobar_process
+            .stdout
+            .take()
+            .ok_or(anyhow!("Unable to get pianobar stdout."))?;
+
+        // Create a broadcast channel for the communication with the stdout task
         let (pianobar_received_messages, _) = broadcast::channel(20);
-        PianobarController {
+
+        // Create a cancel signal that allowes the stdout handler task to stop the controller
+        let cancel_signal = Arc::new(CancelSignal::new());
+
+        // Spawn the stdout handler task
+        let cancel_signal_setter = cancel_signal.clone();
+        let pianobar_received_messages_clone = pianobar_received_messages.clone();
+        tokio::spawn(async move {
+            match PianobarController::process_stdout(
+                pianobar_stdout,
+                pianobar_received_messages_clone,
+            )
+            .await
+            {
+                Ok(()) => cancel_signal_setter.set("Pianobar stdout task closed.".to_string()),
+                Err(err) => cancel_signal_setter.set(format!("{}", err)),
+            };
+        });
+
+        // Create the pianobar actor
+        let pianobar_actor = Mutex::new(PianobarActor::new(pianobar_stdin));
+
+        // Create the controller object
+        Ok(PianobarController {
+            _pianobar_process: pianobar_process,
+            pianobar_actor,
             pianobar_received_messages,
-            pianobar_command: pianobar_command.to_string(),
-        }
+            cancel_signal,
+        })
     }
 
-    async fn process_stdout(&self, mut pianobar_stream: ChildStdout) -> Result<()> {
+    async fn process_stdout(
+        mut pianobar_stream: ChildStdout,
+        pianobar_received_messages: broadcast::Sender<PianobarMessage>,
+    ) -> Result<()> {
         loop {
             // TODO add custom message format to pianobar config,
             // parse stream into messages
@@ -40,10 +124,7 @@ impl PianobarController {
 
             log::debug!("\n{}", msg);
 
-            match self
-                .pianobar_received_messages
-                .send(PianobarMessage::UnknownMessage(msg))
-            {
+            match pianobar_received_messages.send(PianobarMessage::UnknownMessage(msg)) {
                 Ok(num_receivers) => {
                     log::debug!("Sent pianobar message to {} listeners.", num_receivers)
                 }
@@ -51,33 +132,6 @@ impl PianobarController {
                     log::error!("No receiver for message: {:?}", msg);
                 }
             };
-        }
-    }
-
-    async fn process_stdin(
-        &self,
-        mut queue: UnboundedReceiver<String>,
-        mut pianobar_stream: ChildStdin,
-    ) -> Result<()> {
-        loop {
-            let msg = queue
-                .recv()
-                .await
-                .ok_or(anyhow!("Pianobar internal stdin queue closed."))?;
-
-            // Get slice to send
-            let mut send_buffer = msg.as_bytes();
-            while send_buffer.len() > 0 {
-                let num_sent = pianobar_stream.write(send_buffer).await?;
-                if num_sent == 0 {
-                    bail!("Unable to write to pianobar process");
-                }
-                // Remove the sent bytes from the slice
-                send_buffer = &send_buffer[num_sent..];
-            }
-
-            // Flush, to make sure messages without newlines get delivered
-            pianobar_stream.flush().await?;
         }
     }
 
@@ -106,7 +160,7 @@ impl PianobarController {
         }
     }
 
-    async fn stdin_forwarder(&self, pianobar_stdin: &UnboundedSender<String>) -> Result<()> {
+    async fn stdin_forwarder(&self) -> Result<()> {
         loop {
             let mut buffer = [0u8; 1000];
             let mut stdin = tokio::io::stdin();
@@ -117,35 +171,15 @@ impl PianobarController {
                 return Ok(());
             }
             let message = std::str::from_utf8(&buffer[..num_read])?.to_string();
-            pianobar_stdin.send(message)?;
+            self.pianobar_actor.lock().await.write(&message).await?;
         }
     }
 
     pub async fn run(&self) -> Result<()> {
-        log::info!("Start pianobar process ...");
-        let pianobar_process = Command::new(&self.pianobar_command)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .kill_on_drop(true)
-            .spawn()?;
-
-        let pianobar_stdin_stream = pianobar_process
-            .stdin
-            .ok_or(anyhow!("Unable to get pianobar stdin."))?;
-        let pianobar_stdout_stream = pianobar_process
-            .stdout
-            .ok_or(anyhow!("Unable to get pianobar stdout."))?;
-
-        let stdout_task = self.process_stdout(pianobar_stdout_stream);
-
-        let (pianobar_stdin, pianobar_stdin_source) = mpsc::unbounded_channel::<String>();
-        let stdin_task = self.process_stdin(pianobar_stdin_source, pianobar_stdin_stream);
-
         tokio::try_join!(
             self.control_logic(),
-            self.stdin_forwarder(&pianobar_stdin),
-            stdout_task,
-            stdin_task,
+            self.stdin_forwarder(),
+            self.cancel_signal.wait(),
         )?;
 
         bail!("All controller tasks ended unexpectedly.");

@@ -50,7 +50,7 @@ async fn main_with_result() -> Result<()> {
     let event_receiver = PianobarEventReceiver::new(&config);
 
     info!("Create pianobar controller ...");
-    let pianobar_controller = PianobarController::new(&config.pianobar_path);
+    let pianobar_controller = PianobarController::new(&config.pianobar_path)?;
 
     info!("Create websocket ...");
     let websocket = PianobarWebsocket::new(event_receiver.get_event_source_creator());
