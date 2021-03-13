@@ -4,25 +4,30 @@ use std::process::Stdio;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     process::{ChildStdin, ChildStdout, Command},
+    sync::broadcast,
     sync::mpsc::{self, UnboundedReceiver, UnboundedSender},
 };
 
+#[derive(Clone, Debug)]
+enum PianobarMessage {
+    UnknownMessage(String),
+}
+
 pub struct PianobarController {
     pianobar_command: String,
+    pianobar_received_messages: broadcast::Sender<PianobarMessage>,
 }
 
 impl PianobarController {
     pub fn new(pianobar_command: &str) -> PianobarController {
+        let (pianobar_received_messages, _) = broadcast::channel(20);
         PianobarController {
+            pianobar_received_messages,
             pianobar_command: pianobar_command.to_string(),
         }
     }
 
-    async fn process_stdout(
-        &self,
-        queue: UnboundedSender<String>,
-        mut pianobar_stream: ChildStdout,
-    ) -> Result<()> {
+    async fn process_stdout(&self, mut pianobar_stream: ChildStdout) -> Result<()> {
         loop {
             // TODO add custom message format to pianobar config,
             // parse stream into messages
@@ -32,7 +37,20 @@ impl PianobarController {
                 bail!("pianobar program closed!");
             }
             let msg = std::str::from_utf8(&output[..num_read])?.to_string();
-            queue.send(msg)?;
+
+            log::debug!("\n{}", msg);
+
+            match self
+                .pianobar_received_messages
+                .send(PianobarMessage::UnknownMessage(msg))
+            {
+                Ok(num_receivers) => {
+                    log::debug!("Sent pianobar message to {} listeners.", num_receivers)
+                }
+                Err(broadcast::error::SendError(msg)) => {
+                    log::error!("No receiver for message: {:?}", msg);
+                }
+            };
         }
     }
 
@@ -46,11 +64,25 @@ impl PianobarController {
                 .recv()
                 .await
                 .ok_or(anyhow!("Pianobar internal stdin queue closed."))?;
-            pianobar_stream.write(msg.as_bytes()).await?;
+
+            // Get slice to send
+            let mut send_buffer = msg.as_bytes();
+            while send_buffer.len() > 0 {
+                let num_sent = pianobar_stream.write(send_buffer).await?;
+                if num_sent == 0 {
+                    bail!("Unable to write to pianobar process");
+                }
+                // Remove the sent bytes from the slice
+                send_buffer = &send_buffer[num_sent..];
+            }
+
+            // Flush, to make sure messages without newlines get delivered
+            pianobar_stream.flush().await?;
         }
     }
 
-    async fn control_logic(&self, mut pianobar_stdout: UnboundedReceiver<String>) -> Result<()> {
+    async fn control_logic(&self) -> Result<()> {
+        let mut receiver = self.pianobar_received_messages.subscribe();
         loop {
             loop {
                 // TODO process remote procedure calls somehow
@@ -58,11 +90,18 @@ impl PianobarController {
                 // the server directly. Use a mutex for synchronization.
                 // Might want to use the receive stream mutex directly.
                 // (that way the thread can be killed without blocking everything)
-                let message = pianobar_stdout
-                    .recv()
-                    .await
-                    .ok_or(anyhow!("Pianobar internal stdout queue closed."))?;
-                log::debug!("\n{}", message);
+                let message = match receiver.recv().await {
+                    Ok(msg) => msg,
+                    Err(broadcast::error::RecvError::Lagged(num)) => {
+                        log::warn!("Missed {} messages", num);
+                        continue;
+                    }
+                    Err(broadcast::error::RecvError::Closed) => {
+                        bail!("Pianobar internal stdout queue closed.")
+                    }
+                };
+
+                log::debug!("Message: {:?}", message);
             }
         }
     }
@@ -97,14 +136,13 @@ impl PianobarController {
             .stdout
             .ok_or(anyhow!("Unable to get pianobar stdout."))?;
 
-        let (pianobar_stdout_sink, pianobar_stdout) = mpsc::unbounded_channel::<String>();
-        let stdout_task = self.process_stdout(pianobar_stdout_sink, pianobar_stdout_stream);
+        let stdout_task = self.process_stdout(pianobar_stdout_stream);
 
         let (pianobar_stdin, pianobar_stdin_source) = mpsc::unbounded_channel::<String>();
         let stdin_task = self.process_stdin(pianobar_stdin_source, pianobar_stdin_stream);
 
         tokio::try_join!(
-            self.control_logic(pianobar_stdout),
+            self.control_logic(),
             self.stdin_forwarder(&pianobar_stdin),
             stdout_task,
             stdin_task,
