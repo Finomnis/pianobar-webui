@@ -8,5 +8,7 @@ pub async fn plugins(pianobar: &PianobarController) -> Result<()> {
     tokio::try_join!(
         debug_printer::debug_printer(pianobar),
         manual_controller::manual_controller(pianobar)
-    )
+    )?;
+
+    Ok(())
 }
