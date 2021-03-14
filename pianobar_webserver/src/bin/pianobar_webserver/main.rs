@@ -10,7 +10,7 @@ use anyhow::Result;
 use config::Config;
 use event_receiver::PianobarEventReceiver;
 use log::info;
-use pianobar_controller::PianobarController;
+use pianobar_controller::{PianobarActions, PianobarController};
 use signal_handler::handle_interrupt_signals;
 use structopt::StructOpt;
 use warp::Filter;
@@ -51,6 +51,7 @@ async fn main_with_result() -> Result<()> {
 
     info!("Create pianobar controller ...");
     let pianobar_controller = PianobarController::new(&config.pianobar_path)?;
+    let pianobar_actions = PianobarActions::new(&pianobar_controller);
 
     info!("Create websocket ...");
     let websocket = PianobarWebsocket::new(event_receiver.get_event_source_creator());
