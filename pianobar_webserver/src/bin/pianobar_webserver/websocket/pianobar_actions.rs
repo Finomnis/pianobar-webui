@@ -1,13 +1,12 @@
 use super::json_rpc::JsonRpcWebsocket;
 use crate::PianobarActions;
-use jsonrpc_core as jsonrpc;
-use jsonrpc_core::{Error, ErrorCode, Result};
+use jsonrpc_core::{Error, ErrorCode, Params, Result};
 use serde_json as json;
 use std::sync::Arc;
 
 macro_rules! bail {
     ($err:expr $(,)?) => {
-        return jsonrpc::Result::Err($err);
+        return Err($err);
     };
 }
 
@@ -19,7 +18,7 @@ impl ResultToJsonError for std::result::Result<(), anyhow::Error> {
     fn to_json_error(&self) -> Result<()> {
         match self {
             Ok(()) => Ok(()),
-            Err(err) => jsonrpc::Result::Err(Error {
+            Err(err) => Err(Error {
                 code: ErrorCode::InternalError,
                 message: err.to_string(),
                 data: None,
@@ -32,50 +31,47 @@ pub fn register(handler: &mut JsonRpcWebsocket<Arc<PianobarActions>>) {
     handler.add_method("change_station", change_station);
 }
 
-fn get_arg<T>(params: &jsonrpc::Params, pos: usize, name: &str) -> Result<T>
-where
-    T: serde::de::DeserializeOwned,
-{
-    let value = match params {
-        jsonrpc::Params::Array(arr) => arr.get(pos).ok_or(Error {
-            code: ErrorCode::InvalidParams,
-            message: format!(
-                "{}: Not enough arguments",
-                ErrorCode::InvalidParams.description(),
-            ),
-            data: None,
-        }),
-        jsonrpc::Params::Map(map) => map.get(name).ok_or(Error {
-            code: ErrorCode::InvalidParams,
-            message: format!(
-                "{}: Missing argument: '{}'",
-                ErrorCode::InvalidParams.description(),
+struct ArgsExtractor {
+    params: Params,
+}
+
+impl ArgsExtractor {
+    pub fn new(params: Params, max_params: usize) -> Result<ArgsExtractor> {
+        if match &params {
+            Params::Array(arr) => (arr.len() > max_params),
+            Params::Map(map) => (map.len() > max_params),
+            Params::None => false,
+        } {
+            bail!(Error::invalid_params("Too many arguments"));
+        }
+
+        Ok(ArgsExtractor { params })
+    }
+
+    fn get<T>(&self, pos: usize, name: &str) -> Result<T>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        let value = match &self.params {
+            Params::Array(arr) => arr
+                .get(pos)
+                .ok_or(Error::invalid_params("Not enough arguments")),
+            Params::Map(map) => map.get(name).ok_or(Error::invalid_params(format!(
+                "Missing argument: '{}'",
                 name
-            ),
-            data: None,
-        }),
-        jsonrpc::Params::None => Err(Error::new(ErrorCode::InvalidParams)),
-    }?;
-    match json::value::from_value(value.clone()) {
-        Ok(val) => Ok(val),
-        Err(err) => Err(Error {
-            code: ErrorCode::InvalidParams,
-            message: err.to_string(),
-            data: None,
-        }),
+            ))),
+            Params::None => Err(Error::new(ErrorCode::InvalidParams)),
+        }?;
+        json::value::from_value(value.clone())
+            .or_else(|err| Err(Error::invalid_params(err.to_string())))
     }
 }
 
-async fn change_station(
-    params: jsonrpc::Params,
-    actions: Arc<PianobarActions>,
-) -> Result<json::Value> {
-    // let a = get_arg()
-
-    // let station_id = 0;
+async fn change_station(params: Params, actions: Arc<PianobarActions>) -> Result<json::Value> {
+    let args = ArgsExtractor::new(params, 1)?;
 
     Ok(json::json!(actions
-        .change_station(get_arg(&params, 0, "station_id")?)
+        .change_station(args.get(0, "station_id")?)
         .await
         .to_json_error()?))
 }
