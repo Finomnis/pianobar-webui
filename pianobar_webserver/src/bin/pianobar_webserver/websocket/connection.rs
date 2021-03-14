@@ -1,9 +1,12 @@
 use crate::event_receiver::{PianobarUiEvent, PianobarUiEventSource, PianobarUiState};
+use crate::PianobarActions;
 
 use super::json_rpc::JsonRpcWebsocket;
+use super::pianobar_action_wrappers;
 use anyhow::{self, Result};
 use jsonrpc_core as jsonrpc;
 use std::net::SocketAddr;
+use std::sync::Arc;
 use tokio::sync::broadcast;
 use warp::ws::WebSocket;
 
@@ -11,7 +14,7 @@ use warp::ws::WebSocket;
 
 pub struct PianobarWebsocketConnection {
     client_address: String,
-    json_rpc_websocket: JsonRpcWebsocket,
+    json_rpc_websocket: JsonRpcWebsocket<Arc<PianobarActions>>,
 }
 
 impl PianobarWebsocketConnection {
@@ -28,10 +31,13 @@ impl PianobarWebsocketConnection {
         }
     }
 
-    pub async fn run(self, ui_events: PianobarUiEventSource) {
+    pub async fn run(self, ui_events: PianobarUiEventSource, pianobar_actions: PianobarActions) {
         let client_address = self.client_address.clone();
         log::info!("connected: {}", client_address);
-        if let Err(err) = self.run_with_error_handling(ui_events).await {
+        if let Err(err) = self
+            .run_with_error_handling(ui_events, pianobar_actions)
+            .await
+        {
             log::warn!("lost connection: {}", err);
         }
         log::info!("disconnected: {}", client_address);
@@ -57,17 +63,23 @@ impl PianobarWebsocketConnection {
         }
     }
 
-    async fn run_with_error_handling(self, ui_events: PianobarUiEventSource) -> Result<()> {
+    async fn run_with_error_handling(
+        mut self,
+        ui_events: PianobarUiEventSource,
+        pianobar_actions: PianobarActions,
+    ) -> Result<()> {
         // Send welcome message
         log::debug!("send welcome message ...");
         self.send_welcome_message(ui_events.ui_initial_state)?;
+
+        pianobar_action_wrappers::register_actions(&mut self.json_rpc_websocket);
 
         // Start event tasks
         let events_task = self.events_task(ui_events.ui_events);
 
         // Wait until the first task finished
         tokio::select!(
-            ret = self.json_rpc_websocket.run() => ret,
+            ret = self.json_rpc_websocket.run(Arc::new(pianobar_actions)) => ret,
             ret = events_task => ret,
         )
     }

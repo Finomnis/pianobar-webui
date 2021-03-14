@@ -8,13 +8,14 @@ use tokio::sync::mpsc;
 use tokio::sync::Mutex;
 use warp::ws::{Message, WebSocket};
 
-pub struct JsonRpcWebsocket {
+pub struct JsonRpcWebsocket<T: jsonrpc::Metadata> {
     send_queue: mpsc::UnboundedSender<Message>,
     websocket_receiver: Arc<Mutex<SplitStream<WebSocket>>>,
+    jsonrpc_handler: jsonrpc::MetaIoHandler<T>,
 }
 
-impl JsonRpcWebsocket {
-    pub fn new(websocket: WebSocket) -> JsonRpcWebsocket {
+impl<T: jsonrpc::Metadata> JsonRpcWebsocket<T> {
+    pub fn new(websocket: WebSocket) -> Self {
         let (mut websocket_sender, websocket_receiver) = websocket.split();
 
         // Move sender to separate task and abstract it behind an mpsc queue
@@ -35,6 +36,7 @@ impl JsonRpcWebsocket {
         JsonRpcWebsocket {
             send_queue,
             websocket_receiver: Arc::new(Mutex::new(websocket_receiver)),
+            jsonrpc_handler: jsonrpc::MetaIoHandler::default(),
         }
     }
 
@@ -56,15 +58,17 @@ impl JsonRpcWebsocket {
     /// * `message` - The content of the message
     /// * `send_queue` - The queue object used to send responses
     ///
-    async fn handle_message(&self, message: &str) -> Result<()> {
+    async fn handle_message(&self, message: &str, meta: T) -> Result<()> {
         // Just echo all messages
-        self.send_queue.send(Message::text(message))?;
+        if let Some(response) = self.jsonrpc_handler.handle_request(message, meta).await {
+            self.send_queue.send(Message::text(response))?;
+        }
 
         // Handled message successfully
         Ok(())
     }
 
-    pub async fn run(&self) -> Result<()> {
+    pub async fn run(&self, meta: T) -> Result<()> {
         let mut websocket_receiver = self.websocket_receiver.try_lock()?;
 
         while let Some(value) = websocket_receiver.next().await {
@@ -92,7 +96,7 @@ impl JsonRpcWebsocket {
                     Ok(msg) => msg,
                     Err(()) => bail!("expected string, didn't receive string"),
                 };
-                self.handle_message(message).await?;
+                self.handle_message(message, meta.clone()).await?;
             }
         }
 
@@ -100,5 +104,12 @@ impl JsonRpcWebsocket {
         Err(anyhow::Error::msg(
             "connection closed without close message",
         ))
+    }
+
+    pub fn add_method<F>(&mut self, name: &str, method: F)
+    where
+        F: jsonrpc::RpcMethod<T>,
+    {
+        self.jsonrpc_handler.add_method_with_meta(name, method);
     }
 }

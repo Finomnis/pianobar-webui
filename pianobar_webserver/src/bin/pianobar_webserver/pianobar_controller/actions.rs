@@ -4,12 +4,13 @@ use anyhow::Result;
 use std::sync::Arc;
 use tokio::sync::broadcast;
 
-pub struct PianobarActions<'a> {
-    pianobar_controller: &'a PianobarController,
+#[derive(Clone)]
+pub struct PianobarActions {
+    pianobar_controller: Arc<PianobarController>,
 }
 
-impl PianobarActions<'_> {
-    pub fn new<'a>(pianobar_controller: &'a PianobarController) -> PianobarActions<'a> {
+impl PianobarActions {
+    pub fn new(pianobar_controller: Arc<PianobarController>) -> PianobarActions {
         PianobarActions {
             pianobar_controller,
         }

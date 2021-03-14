@@ -5,6 +5,7 @@ mod signal_handler;
 mod websocket;
 
 use std::net::Ipv4Addr;
+use std::sync::Arc;
 
 use anyhow::Result;
 use config::Config;
@@ -50,11 +51,12 @@ async fn main_with_result() -> Result<()> {
     let event_receiver = PianobarEventReceiver::new(&config);
 
     info!("Create pianobar controller ...");
-    let pianobar_controller = PianobarController::new(&config.pianobar_path)?;
-    let pianobar_actions = PianobarActions::new(&pianobar_controller);
+    let pianobar_controller = Arc::new(PianobarController::new(&config.pianobar_path)?);
+    let pianobar_actions = PianobarActions::new(pianobar_controller.clone());
 
     info!("Create websocket ...");
-    let websocket = PianobarWebsocket::new(event_receiver.get_event_source_creator());
+    let websocket =
+        PianobarWebsocket::new(event_receiver.get_event_source_creator(), pianobar_actions);
 
     // Create Websocket route
     let websocket_route = websocket.create_route("ws");
