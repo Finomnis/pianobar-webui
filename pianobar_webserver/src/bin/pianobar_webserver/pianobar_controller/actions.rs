@@ -28,11 +28,32 @@ impl PianobarActions {
         )
     }
 
-    pub async fn change_station(&self, station_id: usize) -> Result<()> {
+    async fn simple_command(&self, cmd: &str) -> Result<()> {
         let (mut _receiver, mut actor) = self.connect().await;
 
-        actor.write(&format!("\r\ns{}\n", station_id)).await?;
+        actor.write(&format!("\r\n{}", cmd)).await?;
 
         Ok(())
+    }
+
+    pub async fn change_station(&self, station_id: usize) -> Result<()> {
+        self.simple_command(&format!("s{}\n", station_id)).await
+    }
+
+    pub async fn pause(&self) -> Result<()> {
+        self.simple_command("S").await
+    }
+
+    pub async fn resume(&self) -> Result<()> {
+        self.simple_command("P").await
+    }
+
+    pub async fn explain(&self) -> Result<String> {
+        let (mut _receiver, mut actor) = self.connect().await;
+
+        actor.write("\r\ne").await?;
+
+        // TODO implement reading the actual result from the receiver
+        Ok("NOT IMPLEMENTED YET".to_string())
     }
 }

@@ -10,20 +10,21 @@ macro_rules! bail {
     };
 }
 
-// Implement .to_json_error conversion function for internal errors
-trait ResultToJsonError {
-    fn to_json_error(&self) -> Result<()>;
+// Implement .to_json conversion function for internal errors
+trait ResultToJson {
+    fn to_json(self) -> Result<json::Value>;
 }
-impl ResultToJsonError for std::result::Result<(), anyhow::Error> {
-    fn to_json_error(&self) -> Result<()> {
-        match self {
-            Ok(()) => Ok(()),
+impl<T: serde::Serialize> ResultToJson for std::result::Result<T, anyhow::Error> {
+    fn to_json(self) -> Result<json::Value> {
+        let json_result = match self {
+            Ok(ok) => Ok(ok),
             Err(err) => Err(Error {
                 code: ErrorCode::InternalError,
                 message: err.to_string(),
                 data: None,
             }),
-        }
+        };
+        Ok(json::json!(json_result?))
     }
 }
 
@@ -65,13 +66,34 @@ impl ArgsExtractor {
 
 pub fn register(handler: &mut JsonRpcWebsocket<Arc<PianobarActions>>) {
     handler.add_method("change_station", change_station);
+    handler.add_method("pause", pause);
+    handler.add_method("resume", resume);
+    handler.add_method("explain", explain);
 }
 
 async fn change_station(params: Params, actions: Arc<PianobarActions>) -> Result<json::Value> {
-    let args = ArgsExtractor::new(params, 1)?;
+    let _args = ArgsExtractor::new(params, 1)?;
 
-    Ok(json::json!(actions
-        .change_station(args.get(0, "station_id")?)
+    actions
+        .change_station(_args.get(0, "station_id")?)
         .await
-        .to_json_error()?))
+        .to_json()
+}
+
+pub async fn pause(params: Params, actions: Arc<PianobarActions>) -> Result<json::Value> {
+    let _args = ArgsExtractor::new(params, 0)?;
+
+    actions.pause().await.to_json()
+}
+
+pub async fn resume(params: Params, actions: Arc<PianobarActions>) -> Result<json::Value> {
+    let _args = ArgsExtractor::new(params, 0)?;
+
+    actions.resume().await.to_json()
+}
+
+pub async fn explain(params: Params, actions: Arc<PianobarActions>) -> Result<json::Value> {
+    let _args = ArgsExtractor::new(params, 0)?;
+
+    actions.explain().await.to_json()
 }
