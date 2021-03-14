@@ -28,7 +28,7 @@ impl ResultToJsonError for std::result::Result<(), anyhow::Error> {
     }
 }
 
-pub fn register_actions(handler: &mut JsonRpcWebsocket<Arc<PianobarActions>>) {
+pub fn register(handler: &mut JsonRpcWebsocket<Arc<PianobarActions>>) {
     handler.add_method("change_station", change_station);
 }
 

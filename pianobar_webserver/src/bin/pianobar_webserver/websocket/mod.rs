@@ -1,6 +1,6 @@
 mod connection;
 mod json_rpc;
-mod pianobar_action_wrappers;
+mod pianobar_actions;
 mod server;
 
 pub use server::PianobarWebsocket;

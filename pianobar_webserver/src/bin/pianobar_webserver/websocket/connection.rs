@@ -2,7 +2,7 @@ use crate::event_receiver::{PianobarUiEvent, PianobarUiEventSource, PianobarUiSt
 use crate::PianobarActions;
 
 use super::json_rpc::JsonRpcWebsocket;
-use super::pianobar_action_wrappers;
+use super::pianobar_actions;
 use anyhow::{self, Result};
 use jsonrpc_core as jsonrpc;
 use std::net::SocketAddr;
@@ -72,7 +72,7 @@ impl PianobarWebsocketConnection {
         log::debug!("send welcome message ...");
         self.send_welcome_message(ui_events.ui_initial_state)?;
 
-        pianobar_action_wrappers::register_actions(&mut self.json_rpc_websocket);
+        pianobar_actions::register(&mut self.json_rpc_websocket);
 
         // Start event tasks
         let events_task = self.events_task(ui_events.ui_events);
