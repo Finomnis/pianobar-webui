@@ -48,6 +48,14 @@ impl PianobarActions {
         self.simple_command("P").await
     }
 
+    pub async fn toggle_pause(&self) -> Result<()> {
+        self.simple_command("p").await
+    }
+
+    pub async fn skip(&self) -> Result<()> {
+        self.simple_command("n").await
+    }
+
     pub async fn explain(&self) -> Result<String> {
         let (mut _receiver, mut actor) = self.connect().await;
 

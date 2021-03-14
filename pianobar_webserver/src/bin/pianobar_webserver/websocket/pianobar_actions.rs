@@ -67,6 +67,8 @@ impl ArgsExtractor {
 pub fn register(handler: &mut JsonRpcWebsocket<Arc<PianobarActions>>) {
     handler.add_method("change_station", change_station);
     handler.add_method("pause", pause);
+    handler.add_method("toggle_pause", toggle_pause);
+    handler.add_method("skip", skip);
     handler.add_method("resume", resume);
     handler.add_method("explain", explain);
 }
@@ -90,6 +92,18 @@ pub async fn resume(params: Params, actions: Arc<PianobarActions>) -> Result<jso
     let _args = ArgsExtractor::new(params, 0)?;
 
     actions.resume().await.to_json()
+}
+
+pub async fn toggle_pause(params: Params, actions: Arc<PianobarActions>) -> Result<json::Value> {
+    let _args = ArgsExtractor::new(params, 0)?;
+
+    actions.toggle_pause().await.to_json()
+}
+
+pub async fn skip(params: Params, actions: Arc<PianobarActions>) -> Result<json::Value> {
+    let _args = ArgsExtractor::new(params, 0)?;
+
+    actions.skip().await.to_json()
 }
 
 pub async fn explain(params: Params, actions: Arc<PianobarActions>) -> Result<json::Value> {
