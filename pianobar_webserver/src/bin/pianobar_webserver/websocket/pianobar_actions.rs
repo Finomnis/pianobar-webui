@@ -27,10 +27,6 @@ impl ResultToJsonError for std::result::Result<(), anyhow::Error> {
     }
 }
 
-pub fn register(handler: &mut JsonRpcWebsocket<Arc<PianobarActions>>) {
-    handler.add_method("change_station", change_station);
-}
-
 struct ArgsExtractor {
     params: Params,
 }
@@ -65,6 +61,10 @@ impl ArgsExtractor {
         json::value::from_value(value.clone())
             .or_else(|err| Err(Error::invalid_params(err.to_string())))
     }
+}
+
+pub fn register(handler: &mut JsonRpcWebsocket<Arc<PianobarActions>>) {
+    handler.add_method("change_station", change_station);
 }
 
 async fn change_station(params: Params, actions: Arc<PianobarActions>) -> Result<json::Value> {
