@@ -23,8 +23,8 @@ pub async fn parse_pianobar_messages(
         log::debug!("\n{}", msg);
 
         match pianobar_received_messages.send(PianobarMessage::UnknownMessage(msg)) {
-            Ok(num_receivers) => {
-                log::debug!("Sent pianobar message to {} listeners.", num_receivers)
+            Ok(_num_receivers) => {
+                //log::debug!("Sent pianobar message to {} listeners.", num_receivers)
             }
             Err(broadcast::error::SendError(msg)) => {
                 log::error!("No receiver for message: {:?}", msg);
