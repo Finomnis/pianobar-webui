@@ -83,10 +83,19 @@ async fn main_with_result() -> Result<()> {
     };
 
     info!("Starting tasks ...");
-    tokio::select!(
+    let result = tokio::select!(
         e = webserver_task => e,
         e = event_receiver.run() => e,
         e = pianobar_controller.run() => e,
         e = handle_interrupt_signals() => e,
-    )
+    );
+
+    log::info!("Shut down ...");
+
+    match pianobar_controller.kill().await {
+        Ok(()) => log::info!("Killed pianobar process."),
+        Err(err) => log::warn!("Unable to kill pianobar: {}", err),
+    }
+
+    result
 }

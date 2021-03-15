@@ -48,7 +48,7 @@ impl PianobarActor {
 }
 
 pub struct PianobarController {
-    _pianobar_process: Child,
+    pianobar_process: Arc<Mutex<Child>>,
     // Wrapped in Mutex to prevent multiple people from sending simultaneously.
     pianobar_actor: Arc<Mutex<PianobarActor>>,
     pianobar_received_messages: broadcast::Sender<PianobarMessage>,
@@ -94,7 +94,7 @@ impl PianobarController {
 
         // Create the controller object
         Ok(PianobarController {
-            _pianobar_process: pianobar_process,
+            pianobar_process: Arc::new(Mutex::new(pianobar_process)),
             pianobar_actor,
             pianobar_received_messages,
             cancel_signal,
@@ -112,5 +112,10 @@ impl PianobarController {
     pub async fn run(&self) -> Result<()> {
         tokio::try_join!(plugins::plugins(self), self.cancel_signal.wait())?;
         bail!("All controller tasks ended unexpectedly.");
+    }
+
+    pub async fn kill(&self) -> Result<()> {
+        self.pianobar_process.lock().await.kill().await?;
+        Ok(())
     }
 }
