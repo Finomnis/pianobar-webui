@@ -1,12 +1,16 @@
 use super::PianobarController;
 use super::{PianobarActor, PianobarMessage};
-use anyhow::Result;
+use anyhow::{bail, Result};
 use std::sync::Arc;
 use tokio::sync::broadcast;
 
 #[derive(Clone)]
 pub struct PianobarActions {
     pianobar_controller: Arc<PianobarController>,
+}
+
+fn with_reset(msg: &str) -> String {
+    format!("\r\n\r\n{}", msg)
 }
 
 impl PianobarActions {
@@ -31,7 +35,7 @@ impl PianobarActions {
     async fn simple_command(&self, cmd: &str) -> Result<()> {
         let (mut _receiver, mut actor) = self.connect().await;
 
-        actor.write(&format!("\r\n{}", cmd)).await?;
+        actor.write(&with_reset(cmd)).await?;
 
         Ok(())
     }
@@ -59,9 +63,9 @@ impl PianobarActions {
     pub async fn explain(&self) -> Result<String> {
         let (mut _receiver, mut actor) = self.connect().await;
 
-        actor.write("\r\ne").await?;
+        actor.write(&with_reset("e")).await?;
 
         // TODO implement reading the actual result from the receiver
-        Ok("NOT IMPLEMENTED YET".to_string())
+        bail!("NOT IMPLEMENTED YET".to_string());
     }
 }
