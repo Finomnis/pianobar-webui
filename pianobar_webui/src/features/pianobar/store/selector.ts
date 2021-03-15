@@ -4,9 +4,11 @@ import { RootState } from "../../../app/store";
 export const selectPianobarRawUiState = (state: RootState) => state.pianobar.ui;
 
 function selectPianobarStateString(state: RootState, key: string): string {
+    let uiState = selectPianobarRawUiState(state);
+
     let result = "";
-    if (key in state.pianobar.ui) {
-        let value = state.pianobar.ui[key];
+    if (key in uiState) {
+        let value = uiState[key];
         if (typeof value === "string") {
             result = value;
         }
@@ -51,4 +53,25 @@ export const selectPianobarSongPlayedSeconds = (state: RootState): number => {
 
 export const selectPianobarRating = (state: RootState): number => {
     return selectPianobarStateNumber(state, "rating");
+};
+
+export const selectPianobarStations = (state: RootState): string[] => {
+    let uiState = selectPianobarRawUiState(state);
+
+    let result: string[] = [];
+
+    if ("stations" in uiState) {
+        let stations = uiState["stations"];
+        if (Array.isArray(stations)) {
+            for (const element of stations) {
+                if (typeof element !== "string") {
+                    console.error("'stations' entry contains invalid values:", stations);
+                    return [];
+                }
+                result.push(element);
+            }
+        }
+    }
+
+    return result;
 };
