@@ -18,3 +18,5 @@ jsonrpc-core = "17.0.0"
 serde_json = "1.0.64"
 serde = {version="1.0.124", features = ["derive"]}
 const_format = "0.2.13"
+rust-ini = "0.16.1"
+shellexpand = "2.1.0"

@@ -11,7 +11,7 @@ use anyhow::Result;
 use config::Config;
 use event_receiver::PianobarEventReceiver;
 use log::info;
-use pianobar_controller::{PianobarActions, PianobarController};
+use pianobar_controller::{set_pianobar_configs, PianobarActions, PianobarController};
 use signal_handler::handle_interrupt_signals;
 use structopt::StructOpt;
 use warp::Filter;
@@ -49,6 +49,9 @@ async fn main_with_result() -> Result<()> {
 
     info!("Create event handler ...");
     let event_receiver = PianobarEventReceiver::new(&config);
+
+    info!("Write pianobar config ...");
+    set_pianobar_configs(&config.pianobar_config)?;
 
     info!("Create pianobar controller ...");
     let pianobar_controller = Arc::new(PianobarController::new(&config.pianobar_path)?);
