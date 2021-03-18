@@ -12,6 +12,7 @@ pub struct JsonRpcWebsocket<T: jsonrpc::Metadata> {
     send_queue: mpsc::UnboundedSender<Message>,
     websocket_receiver: Arc<Mutex<SplitStream<WebSocket>>>,
     jsonrpc_handler: jsonrpc::MetaIoHandler<T>,
+    receive_task: tokio::task::JoinHandle<()>,
 }
 
 impl<T: jsonrpc::Metadata> JsonRpcWebsocket<T> {
@@ -20,7 +21,7 @@ impl<T: jsonrpc::Metadata> JsonRpcWebsocket<T> {
 
         // Move sender to separate task and abstract it behind an mpsc queue
         let (send_queue, mut send_queue_receiver) = mpsc::unbounded_channel::<warp::ws::Message>();
-        tokio::task::spawn(async move {
+        let receive_task = tokio::task::spawn(async move {
             while let Some(item) = send_queue_receiver.recv().await {
                 let is_close = item.is_close();
                 if let Err(err) = websocket_sender.send(item).await {
@@ -37,6 +38,7 @@ impl<T: jsonrpc::Metadata> JsonRpcWebsocket<T> {
             send_queue,
             websocket_receiver: Arc::new(Mutex::new(websocket_receiver)),
             jsonrpc_handler: jsonrpc::MetaIoHandler::default(),
+            receive_task,
         }
     }
 
@@ -111,5 +113,12 @@ impl<T: jsonrpc::Metadata> JsonRpcWebsocket<T> {
         F: jsonrpc::RpcMethod<T>,
     {
         self.jsonrpc_handler.add_method_with_meta(name, method);
+    }
+}
+
+impl<T: jsonrpc::Metadata> Drop for JsonRpcWebsocket<T> {
+    fn drop(&mut self) {
+        log::debug!("Cancelling JsonRPC receive task ...");
+        self.receive_task.abort();
     }
 }
