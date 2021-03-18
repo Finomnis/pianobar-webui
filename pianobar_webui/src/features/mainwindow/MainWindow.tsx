@@ -1,12 +1,17 @@
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "../../app/store";
 import { changeStationAction, pauseAction, resumeAction, skipAction } from "../pianobar/actions/simpleActions";
-import { selectPianobarRawUiState, selectPianobarStations } from "../pianobar/store/selector";
+import { selectPianobarAlbum, selectPianobarArtist, selectPianobarRawUiState, selectPianobarStationName, selectPianobarStations, selectPianobarTitle } from "../pianobar/store/selector";
 import CoverArt from "./CoverArt";
 
 const MainWindow = () => {
     let uiState = useSelector(selectPianobarRawUiState);
     let pianobarStations = useSelector(selectPianobarStations);
+    let pianobarTitle = useSelector(selectPianobarTitle);
+    let pianobarAlbum = useSelector(selectPianobarAlbum);
+    let pianobarArtist = useSelector(selectPianobarArtist);
+    let pianobarStationName = useSelector(selectPianobarStationName);
+
     let dispatch = useAppDispatch();
 
     let stateList = Object.entries(uiState).map(([key, value]) => (
@@ -27,13 +32,22 @@ const MainWindow = () => {
 
     return (
         <div>
-            <table>
-                <tbody>{stateList}</tbody>
-            </table>
-            <CoverArt width="400px" height="400px" />
-
+            <CoverArt width="300px" height="300px" />
             <br />
-
+            - {pianobarStationName} -
+            <br />
+            <table>
+                <tbody>
+                    <tr>
+                        <td>Song:</td><td>{pianobarTitle}</td>
+                    </tr><tr>
+                        <td>Artist:</td><td>{pianobarArtist}</td>
+                    </tr><tr>
+                        <td>Album:</td><td>{pianobarAlbum}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <br />
             <form onSubmit={changeStation}>
                 <label>Station:&nbsp;
                     <select required>
@@ -52,6 +66,12 @@ const MainWindow = () => {
             <button onClick={() => dispatch(pauseAction.run())}>Pause</button>
             <br /><br />
             <button onClick={() => dispatch(skipAction.run())}>Skip</button>
+            <br /><br /><br /><br />
+            Raw state:
+            <br /><br />
+            <table>
+                <tbody>{stateList}</tbody>
+            </table>
         </div>
     );
 };
