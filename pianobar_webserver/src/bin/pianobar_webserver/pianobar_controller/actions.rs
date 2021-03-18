@@ -1,26 +1,15 @@
 use super::PianobarController;
 use super::{PianobarActor, PianobarMessage};
-use anyhow::{bail, Result};
-use std::sync::Arc;
+use anyhow::{anyhow, bail, Result};
+use std::sync::{Arc, Weak};
 use tokio::sync::broadcast;
 
-#[derive(Clone)]
-pub struct PianobarActions {
+struct PianobarActionsConnection {
     pianobar_controller: Arc<PianobarController>,
 }
 
-fn with_reset(msg: &str) -> String {
-    format!("\r\n\r\n{}", msg)
-}
-
-impl PianobarActions {
-    pub fn new(pianobar_controller: Arc<PianobarController>) -> PianobarActions {
-        PianobarActions {
-            pianobar_controller,
-        }
-    }
-
-    async fn connect(
+impl PianobarActionsConnection {
+    async fn lock(
         &self,
     ) -> (
         broadcast::Receiver<PianobarMessage>,
@@ -31,9 +20,36 @@ impl PianobarActions {
             self.pianobar_controller.take_actor().await,
         )
     }
+}
+
+#[derive(Clone)]
+pub struct PianobarActions {
+    pianobar_controller: Weak<PianobarController>,
+}
+
+fn with_reset(msg: &str) -> String {
+    format!("\r\n\r\n{}", msg)
+}
+
+impl PianobarActions {
+    pub fn new(pianobar_controller: Weak<PianobarController>) -> PianobarActions {
+        PianobarActions {
+            pianobar_controller,
+        }
+    }
+
+    fn connect(&self) -> Result<PianobarActionsConnection> {
+        Ok(PianobarActionsConnection {
+            pianobar_controller: self
+                .pianobar_controller
+                .upgrade()
+                .ok_or(anyhow!("Unable to take pianobar actions object!"))?,
+        })
+    }
 
     async fn simple_command(&self, cmd: &str) -> Result<()> {
-        let (mut _receiver, mut actor) = self.connect().await;
+        let pianobar_actions_connection = self.connect()?;
+        let (mut _receiver, mut actor) = pianobar_actions_connection.lock().await;
 
         actor.write(&with_reset(cmd)).await?;
 
@@ -67,7 +83,8 @@ impl PianobarActions {
 
     pub async fn explain(&self) -> Result<String> {
         log::info!("Explaining ...");
-        let (mut _receiver, mut actor) = self.connect().await;
+        let pianobar_actions_connection = self.connect()?;
+        let (mut _receiver, mut actor) = pianobar_actions_connection.lock().await;
 
         actor.write(&with_reset("e")).await?;
 

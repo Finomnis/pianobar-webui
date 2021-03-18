@@ -52,7 +52,9 @@ async fn main_with_result() -> Result<()> {
 
     info!("Create pianobar controller ...");
     let pianobar_controller = Arc::new(PianobarController::new(&config.pianobar_path)?);
-    let pianobar_actions = PianobarActions::new(pianobar_controller.clone());
+    // Create actions object from weak-pointer controller, to make sure the pianobar
+    // process gets destroyed at the end of the program and not held in some tokio::spawn
+    let pianobar_actions = PianobarActions::new(Arc::downgrade(&pianobar_controller));
 
     info!("Create websocket ...");
     let websocket =
@@ -91,11 +93,5 @@ async fn main_with_result() -> Result<()> {
     );
 
     log::info!("Shut down ...");
-
-    match pianobar_controller.kill().await {
-        Ok(()) => log::info!("Killed pianobar process."),
-        Err(err) => log::warn!("Unable to kill pianobar: {}", err),
-    }
-
     result
 }

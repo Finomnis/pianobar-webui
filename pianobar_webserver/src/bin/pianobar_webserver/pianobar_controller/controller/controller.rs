@@ -53,6 +53,7 @@ pub struct PianobarController {
     pianobar_actor: Arc<Mutex<PianobarActor>>,
     pianobar_received_messages: broadcast::Sender<PianobarMessage>,
     cancel_signal: Arc<CancelSignal>,
+    pianobar_stdout_task: tokio::task::JoinHandle<()>,
 }
 
 impl PianobarController {
@@ -82,7 +83,7 @@ impl PianobarController {
         // Spawn the stdout handler task
         let cancel_signal_setter = cancel_signal.clone();
         let pianobar_received_messages_clone = pianobar_received_messages.clone();
-        tokio::spawn(async move {
+        let pianobar_stdout_task = tokio::spawn(async move {
             match parse_pianobar_messages(pianobar_stdout, pianobar_received_messages_clone).await {
                 Ok(()) => cancel_signal_setter.set("Pianobar stdout task closed.".to_string()),
                 Err(err) => cancel_signal_setter.set(format!("{}", err)),
@@ -98,6 +99,7 @@ impl PianobarController {
             pianobar_actor,
             pianobar_received_messages,
             cancel_signal,
+            pianobar_stdout_task,
         })
     }
 
@@ -114,8 +116,21 @@ impl PianobarController {
         bail!("All controller tasks ended unexpectedly.");
     }
 
-    pub async fn kill(&self) -> Result<()> {
+    async fn kill(&self) -> Result<()> {
         self.pianobar_process.lock().await.kill().await?;
         Ok(())
+    }
+}
+
+impl Drop for PianobarController {
+    fn drop(&mut self) {
+        // Stop pianobar stdout parser task
+        self.pianobar_stdout_task.abort();
+
+        // Stop pianobar process
+        match tokio::task::block_in_place(|| futures::executor::block_on(self.kill())) {
+            Ok(()) => log::info!("Killed pianobar process."),
+            Err(err) => log::warn!("Unable to kill pianobar: {}", err),
+        }
     }
 }
