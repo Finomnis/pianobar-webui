@@ -4,13 +4,15 @@ Bootstrap stories:
     + typescript
     + rpc-websocket
     + ui state -> redux
-- write pianobar wrapper/controller
-- implement json-rpc functions
++ write pianobar wrapper/controller
++ implement json-rpc functions
 
-Impediments:
-- killing pianobar seems to lock up the server (only ctrl-D works, which is very weird)
+
+
+- Implement play/pause/time state based on the "current time" command line messages of pianobar.
+    - 'pause' emits same time twice, so comparing previous/new time should work
+
 
 Continued stories:
 <implement ui features>
 - implement state display
-
