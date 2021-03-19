@@ -6,7 +6,7 @@ mod websocket;
 
 use std::net::Ipv4Addr;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use config::Config;
 use event_receiver::PianobarEventReceiver;
 use log::info;
@@ -92,7 +92,7 @@ async fn main_with_result() -> Result<()> {
             log::debug!("Serve websocket at port {} ...", config.port);
             warp::serve(websocket_route).run(addr).await;
         }
-        Ok(())
+        Result::<()>::Err(anyhow!("Web server closed. Should never happen."))
     };
 
     // Additional plugins
