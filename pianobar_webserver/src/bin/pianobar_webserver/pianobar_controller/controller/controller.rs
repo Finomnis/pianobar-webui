@@ -47,18 +47,16 @@ impl PianobarActor {
     }
 }
 
+#[derive(Clone)]
 pub struct PianobarController {
     // Wrapped in Mutex to prevent multiple people from sending simultaneously.
     pianobar_actor: Arc<Mutex<PianobarActor>>,
     pianobar_received_messages: broadcast::Sender<PianobarMessage>,
     cancel_signal: Arc<CancelSignal>,
-    pianobar_stdout_task: tokio::task::JoinHandle<()>,
 }
 
 impl PianobarController {
-    pub fn start_pianobar_process(
-        pianobar_command: &str,
-    ) -> Result<(Arc<PianobarController>, Child)> {
+    pub fn start_pianobar_process(pianobar_command: &str) -> Result<(PianobarController, Child)> {
         // Start the pianobar process and get the handle to the stdin and stdout streams
         log::info!("Start pianobar process ...");
         let mut pianobar_process = Command::new(pianobar_command)
@@ -84,7 +82,7 @@ impl PianobarController {
         // Spawn the stdout handler task
         let cancel_signal_setter = cancel_signal.clone();
         let pianobar_received_messages_clone = pianobar_received_messages.clone();
-        let pianobar_stdout_task = tokio::spawn(async move {
+        tokio::spawn(async move {
             match parse_pianobar_messages(pianobar_stdout, pianobar_received_messages_clone).await {
                 Ok(()) => cancel_signal_setter.set("Pianobar stdout task closed.".to_string()),
                 Err(err) => cancel_signal_setter.set(format!("{}", err)),
@@ -96,12 +94,11 @@ impl PianobarController {
 
         // Create the controller object
         Ok((
-            Arc::new(PianobarController {
+            PianobarController {
                 pianobar_actor,
                 pianobar_received_messages,
                 cancel_signal,
-                pianobar_stdout_task,
-            }),
+            },
             pianobar_process,
         ))
     }
@@ -117,12 +114,5 @@ impl PianobarController {
     pub async fn run(&self) -> Result<()> {
         tokio::try_join!(plugins::plugins(self), self.cancel_signal.wait())?;
         bail!("All controller tasks ended unexpectedly.");
-    }
-}
-
-impl Drop for PianobarController {
-    fn drop(&mut self) {
-        // Stop pianobar stdout parser task
-        self.pianobar_stdout_task.abort();
     }
 }

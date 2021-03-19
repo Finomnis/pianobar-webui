@@ -1,12 +1,11 @@
 use super::PianobarController;
 use super::{PianobarActor, PianobarMessage};
 use anyhow::{bail, Result};
-use std::sync::Arc;
 use tokio::sync::broadcast;
 
 #[derive(Clone)]
 pub struct PianobarActions {
-    pianobar_controller: Arc<PianobarController>,
+    pianobar_controller: PianobarController,
 }
 
 fn with_reset(msg: &str) -> String {
@@ -14,9 +13,9 @@ fn with_reset(msg: &str) -> String {
 }
 
 impl PianobarActions {
-    pub fn new(pianobar_controller: Arc<PianobarController>) -> PianobarActions {
+    pub fn new(pianobar_controller: &PianobarController) -> PianobarActions {
         PianobarActions {
-            pianobar_controller,
+            pianobar_controller: pianobar_controller.clone(),
         }
     }
 
