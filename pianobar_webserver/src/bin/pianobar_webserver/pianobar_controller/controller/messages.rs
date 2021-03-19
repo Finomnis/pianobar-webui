@@ -16,6 +16,7 @@ struct PianobarMessageParser {
     buffer: String,
     message_time_regex: Regex,
     message_time_previous: (u32, u32),
+    message_time_repeat_counter: u32,
 }
 
 fn message_start_differs_from(message: &str, expected: &str) -> bool {
@@ -29,6 +30,7 @@ impl PianobarMessageParser {
             buffer: String::new(),
             message_time_regex: Regex::new(r"^-?(\d+):(\d+)/(\d+):(\d+)$").unwrap(),
             message_time_previous: (0, 0),
+            message_time_repeat_counter: 0,
         }
     }
 
@@ -70,8 +72,17 @@ impl PianobarMessageParser {
 
         // Compute 'paused' info
         let (prev_current, prev_total) = self.message_time_previous;
-        let paused = (prev_current == time_current) && (prev_total == time_total);
+        if (prev_current == time_current) && (prev_total == time_total) {
+            self.message_time_repeat_counter = min(self.message_time_repeat_counter + 1, 10);
+        } else {
+            self.message_time_repeat_counter = 0;
+        }
         self.message_time_previous = (time_current, time_total);
+        // Only set 'paused' when time was repeated at least twice.
+        // Pianobar has a bug where due to time jitter it repeats timestamps
+        // once, so don't count that. Otherwise it would sometimes oscillate
+        // between 'play' and 'paused'
+        let paused = self.message_time_repeat_counter >= 2;
 
         Ok(PianobarMessage::SongTime {
             current: time_current,
