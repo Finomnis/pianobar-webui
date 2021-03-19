@@ -75,3 +75,5 @@ export const selectPianobarStations = (state: RootState): string[] => {
 
     return result;
 };
+
+export const selectPianobarConnected = (state: RootState): boolean => state.pianobar.websocket.connected;

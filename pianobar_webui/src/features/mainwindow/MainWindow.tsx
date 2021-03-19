@@ -1,7 +1,7 @@
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "../../app/store";
 import { changeStationAction, pauseAction, resumeAction, skipAction } from "../pianobar/actions/simpleActions";
-import { selectPianobarAlbum, selectPianobarArtist, selectPianobarRawUiState, selectPianobarStationName, selectPianobarStations, selectPianobarTitle } from "../pianobar/store/selector";
+import { selectPianobarAlbum, selectPianobarArtist, selectPianobarConnected, selectPianobarRawUiState, selectPianobarStationName, selectPianobarStations, selectPianobarTitle } from "../pianobar/store/selector";
 import CoverArt from "./CoverArt";
 
 const MainWindow = () => {
@@ -11,6 +11,8 @@ const MainWindow = () => {
     let pianobarAlbum = useSelector(selectPianobarAlbum);
     let pianobarArtist = useSelector(selectPianobarArtist);
     let pianobarStationName = useSelector(selectPianobarStationName);
+
+    let connected = useSelector(selectPianobarConnected);
 
     let dispatch = useAppDispatch();
 
@@ -67,6 +69,8 @@ const MainWindow = () => {
             <br /><br />
             <button onClick={() => dispatch(skipAction.run())}>Skip</button>
             <br /><br /><br /><br />
+            Connected: {connected ? "yes" : "no"}
+            <br /><br />
             Raw state:
             <br /><br />
             <table>
