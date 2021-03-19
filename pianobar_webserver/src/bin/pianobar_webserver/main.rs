@@ -102,16 +102,17 @@ async fn main_with_result() -> Result<()> {
     let mut manual_controller = ManualController::new(&pianobar_controller);
 
     info!("Starting tasks ...");
-    let result = tokio::select!(
-        e = webserver_task => e,
-        e = event_receiver.run() => e,
-        e = pianobar_controller.run() => e,
-        e = pianobar_state.run() => e,
-        e = handle_interrupt_signals() => e,
-        e = debug_printer.run() => e,
-        e = manual_controller.run() => e,
+    let result = tokio::try_join!(
+        webserver_task,
+        event_receiver.run(),
+        pianobar_controller.run(),
+        pianobar_state.run(),
+        handle_interrupt_signals(),
+        debug_printer.run(),
+        manual_controller.run(),
     );
 
     log::info!("Shut down ...");
-    result
+    result?;
+    Ok(())
 }
