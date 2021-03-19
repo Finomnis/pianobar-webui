@@ -41,12 +41,12 @@ impl PianobarWebsocket {
         warp::path(path)
             .and(warp::ws())
             .and(warp::addr::remote())
-            .and(self.with_ui_event_source())
+            .and(self.with_ui_events())
             .and(self.with_pianobar_actions())
             .and_then(PianobarWebsocket::connection_upgrader)
     }
 
-    fn with_ui_event_source(
+    fn with_ui_events(
         &self,
     ) -> impl Filter<Extract = (PianobarUiEventSource,), Error = std::convert::Infallible> + Clone
     {
