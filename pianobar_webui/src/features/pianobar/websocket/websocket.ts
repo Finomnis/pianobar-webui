@@ -3,12 +3,14 @@ import { Client } from "rpc-websockets";
 
 import { WEBSOCKET_PORT } from "../../../config";
 import { initializeConnectionHandlers } from "./connectionChanged";
-import { initializeUiEvents } from "./uiEvents";
+import { initializePlayerStateReceiver } from "./playerState";
+import { initializeUiEventReceiver } from "./uiEvents";
 import websocket from "./websocket";
 
 export function* pianobarWebsocketSaga() {
     // Register notification listeners
-    yield call(initializeUiEvents, websocket);
+    yield call(initializeUiEventReceiver, websocket);
+    yield call(initializePlayerStateReceiver, websocket);
     yield call(initializeConnectionHandlers, websocket);
 
     // Start connection

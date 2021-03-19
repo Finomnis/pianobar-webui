@@ -1,10 +1,17 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { PlayerState } from "./playerState";
 
 let initialState: {
-    ui: { [key: string]: object };
-    websocket: { connected: boolean };
+    ui: { [key: string]: object },
+    player: PlayerState,
+    websocket: { connected: boolean },
 } = {
     ui: {},
+    player: {
+        paused: true,
+        song_time_played: 0,
+        song_time_total: 0
+    },
     websocket: {
         connected: false,
     },
@@ -23,6 +30,12 @@ const slice = createSlice({
                 state.ui[key] = value;
             }
         },
+        playerStateReceived: (
+            state,
+            action: PayloadAction<{ state: PlayerState }>
+        ) => {
+            state.player = action.payload.state;
+        },
         websocketConnectionOpened: (state) => {
             state.websocket.connected = true;
         },
@@ -35,6 +48,7 @@ const slice = createSlice({
 // Slice exports
 export const {
     uiEventReceived,
+    playerStateReceived,
     websocketConnectionOpened,
     websocketConnectionClosed,
 } = slice.actions;

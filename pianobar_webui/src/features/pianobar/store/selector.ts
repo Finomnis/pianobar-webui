@@ -43,14 +43,6 @@ export const selectPianobarStationName = (state: RootState): string => {
     return selectPianobarStateString(state, "stationName");
 };
 
-export const selectPianobarSongDurationSeconds = (state: RootState): number => {
-    return selectPianobarStateNumber(state, "songDuration");
-};
-
-export const selectPianobarSongPlayedSeconds = (state: RootState): number => {
-    return selectPianobarStateNumber(state, "songPlayed");
-};
-
 export const selectPianobarRating = (state: RootState): number => {
     return selectPianobarStateNumber(state, "rating");
 };
@@ -77,3 +69,23 @@ export const selectPianobarStations = (state: RootState): string[] => {
 };
 
 export const selectPianobarConnected = (state: RootState): boolean => state.pianobar.websocket.connected;
+export const selectPianobarPaused = (state: RootState): boolean => state.pianobar.player.paused;
+export const selectPianobarSongPlayedSeconds = (state: RootState): number => state.pianobar.player.song_time_played;
+export const selectPianobarSongDurationSeconds = (state: RootState): number => state.pianobar.player.song_time_total;
+
+
+function convert_seconds_to_string(secs: number): string {
+    const minutes = Math.floor(secs / 60);
+    const seconds = secs % 60;
+    if (seconds < 10) {
+        return minutes + ":0" + seconds;
+    } else {
+        return minutes + ":" + seconds;
+    }
+}
+export const selectPianobarSongPlayedTime = (state: RootState): string => {
+    return convert_seconds_to_string(state.pianobar.player.song_time_played);
+}
+export const selectPianobarSongDurationTime = (state: RootState): string => {
+    return convert_seconds_to_string(state.pianobar.player.song_time_total);
+}
