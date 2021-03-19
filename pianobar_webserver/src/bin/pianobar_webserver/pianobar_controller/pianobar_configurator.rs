@@ -1,5 +1,5 @@
 use anyhow::{anyhow, bail, Result};
-use ini::Ini;
+use ini::{EscapePolicy, Ini};
 
 use log;
 use std::path::Path;
@@ -27,10 +27,19 @@ fn set_event_command(config: &mut Ini) -> Result<()> {
     Ok(())
 }
 
+pub fn set_message_formats(config: &mut Ini) {
+    config
+        .with_general_section()
+        .set("format_msg_time", "\x1e[[#TIME#\x1e%s\x1e#]]");
+}
+
 pub fn set_pianobar_configs(config_file: &str) -> Result<()> {
+    // Compute config path
     let config_path_expanded = shellexpand::tilde(config_file).to_string();
     let config_path = Path::new(&config_path_expanded);
 
+    // Check if config exists. Don't create manually, user might already have a
+    // config in a different directory.
     if !config_path.exists() {
         bail!(
             "Pianobar config ({}) does not exist! Please create it.",
@@ -38,8 +47,11 @@ pub fn set_pianobar_configs(config_file: &str) -> Result<()> {
         );
     }
 
+    // Load config from file
     let mut config = Ini::load_from_file(config_path)?;
 
+    // Set config options
+    set_message_formats(&mut config);
     if let Err(err) = set_event_command(&mut config) {
         log::warn!(
             "------------------------------------------------------------------------------"
@@ -54,6 +66,7 @@ pub fn set_pianobar_configs(config_file: &str) -> Result<()> {
         );
     }
 
+    // DEBUG information
     let mut output = Vec::new();
     config.write_to(&mut output)?;
     match String::from_utf8(output) {
@@ -69,7 +82,8 @@ pub fn set_pianobar_configs(config_file: &str) -> Result<()> {
         }
     };
 
-    config.write_to_file(config_path)?;
+    // Write config to file
+    config.write_to_file_policy(config_path, EscapePolicy::Nothing)?;
 
     Ok(())
 }
