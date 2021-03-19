@@ -19,17 +19,17 @@ impl PianobarPlayerState {
     }
 }
 
-pub struct PianobarPlayerStateWatcher<'a> {
-    controller: &'a PianobarController,
+pub struct PianobarPlayerStateWatcher {
+    receiver: broadcast::Receiver<PianobarMessage>,
     channel_in: watch::Sender<PianobarPlayerState>,
     channel_out: watch::Receiver<PianobarPlayerState>,
 }
 
-impl<'a> PianobarPlayerStateWatcher<'a> {
-    pub fn new(pianobar_controller: &'a PianobarController) -> Self {
+impl PianobarPlayerStateWatcher {
+    pub fn new(controller: &PianobarController) -> Self {
         let (channel_in, channel_out) = watch::channel(PianobarPlayerState::initial_state());
         PianobarPlayerStateWatcher {
-            controller: pianobar_controller,
+            receiver: controller.subscribe(),
             channel_in,
             channel_out,
         }
@@ -55,10 +55,8 @@ impl<'a> PianobarPlayerStateWatcher<'a> {
     }
 
     pub async fn run(&mut self) -> Result<()> {
-        let mut events = self.controller.subscribe();
-
         loop {
-            let message = match events.recv().await {
+            let message = match self.receiver.recv().await {
                 Ok(msg) => msg,
                 Err(broadcast::error::RecvError::Lagged(num)) => {
                     log::warn!("Missed {} messages", num);
