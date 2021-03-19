@@ -8,15 +8,16 @@ use anyhow::{self, Result};
 use jsonrpc_core as jsonrpc;
 use std::borrow::Borrow;
 use std::net::SocketAddr;
-use std::sync::Arc;
 use tokio::sync::{broadcast, watch};
 use warp::ws::WebSocket;
 
 // use futures::FutureExt;
 
+impl jsonrpc::Metadata for PianobarActions {}
+
 pub struct PianobarWebsocketConnection {
     client_address: String,
-    json_rpc_websocket: JsonRpcWebsocket<Arc<PianobarActions>>,
+    json_rpc_websocket: JsonRpcWebsocket<PianobarActions>,
 }
 
 impl PianobarWebsocketConnection {
@@ -107,7 +108,7 @@ impl PianobarWebsocketConnection {
 
         // Wait until the first task finished
         tokio::select!(
-            ret = self.json_rpc_websocket.run(Arc::new(pianobar_actions)) => ret,
+            ret = self.json_rpc_websocket.run(pianobar_actions) => ret,
             ret = events_task => ret,
             ret = player_state_task => ret,
         )

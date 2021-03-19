@@ -2,7 +2,6 @@ use super::json_rpc::JsonRpcWebsocket;
 use crate::PianobarActions;
 use jsonrpc_core::{Error, ErrorCode, Params, Result};
 use serde_json as json;
-use std::sync::Arc;
 
 macro_rules! bail {
     ($err:expr $(,)?) => {
@@ -64,7 +63,7 @@ impl ArgsExtractor {
     }
 }
 
-pub fn register(handler: &mut JsonRpcWebsocket<Arc<PianobarActions>>) {
+pub fn register(handler: &mut JsonRpcWebsocket<PianobarActions>) {
     handler.add_method("change_station", change_station);
     handler.add_method("pause", pause);
     handler.add_method("toggle_pause", toggle_pause);
@@ -73,7 +72,7 @@ pub fn register(handler: &mut JsonRpcWebsocket<Arc<PianobarActions>>) {
     handler.add_method("explain", explain);
 }
 
-async fn change_station(params: Params, actions: Arc<PianobarActions>) -> Result<json::Value> {
+async fn change_station(params: Params, actions: PianobarActions) -> Result<json::Value> {
     let _args = ArgsExtractor::new(params, 1)?;
 
     actions
@@ -82,31 +81,31 @@ async fn change_station(params: Params, actions: Arc<PianobarActions>) -> Result
         .to_json()
 }
 
-pub async fn pause(params: Params, actions: Arc<PianobarActions>) -> Result<json::Value> {
+pub async fn pause(params: Params, actions: PianobarActions) -> Result<json::Value> {
     let _args = ArgsExtractor::new(params, 0)?;
 
     actions.pause().await.to_json()
 }
 
-pub async fn resume(params: Params, actions: Arc<PianobarActions>) -> Result<json::Value> {
+pub async fn resume(params: Params, actions: PianobarActions) -> Result<json::Value> {
     let _args = ArgsExtractor::new(params, 0)?;
 
     actions.resume().await.to_json()
 }
 
-pub async fn toggle_pause(params: Params, actions: Arc<PianobarActions>) -> Result<json::Value> {
+pub async fn toggle_pause(params: Params, actions: PianobarActions) -> Result<json::Value> {
     let _args = ArgsExtractor::new(params, 0)?;
 
     actions.toggle_pause().await.to_json()
 }
 
-pub async fn skip(params: Params, actions: Arc<PianobarActions>) -> Result<json::Value> {
+pub async fn skip(params: Params, actions: PianobarActions) -> Result<json::Value> {
     let _args = ArgsExtractor::new(params, 0)?;
 
     actions.skip().await.to_json()
 }
 
-pub async fn explain(params: Params, actions: Arc<PianobarActions>) -> Result<json::Value> {
+pub async fn explain(params: Params, actions: PianobarActions) -> Result<json::Value> {
     let _args = ArgsExtractor::new(params, 0)?;
 
     actions.explain().await.to_json()
