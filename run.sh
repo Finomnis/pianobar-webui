@@ -4,28 +4,30 @@ set -eu
 
 SCRIPTPATH=$( cd "$(dirname "$(readlink -f "$0")")"; pwd -P )
 
-# Update venv
-echo "Creating virtual environment ..."
-"${SCRIPTPATH}/scripts/create_venv.sh"
+# Set working directory
+cd "$SCRIPTPATH"
 
-# Activate venv
-echo "Activating virtual environment ..."
-source "${SCRIPTPATH}/.venv/bin/activate"
+# Create build directory
+mkdir -p build
 
-# Add hooks to pianobar config
-echo "Registering pianobar hooks ..."
-"${SCRIPTPATH}/scripts/add_hooks_to_pianobar.sh"
+# Check if rust is installed
+if ! command -v cargo &> /dev/null
+then
+    echo "The Rust compiler does not seem to be installed on this system."
+    echo "It is required to run this program."
+    echo "For more information, visit: https://rustup.rs/"
+    exit 1
+fi
 
-# Adding cleanup hooks
-trap "jobs -p | xargs -r kill" SIGINT SIGTERM EXIT
+# Compile the server binaries
+cargo install --path pianobar_webserver --root build
+
+# Compile the webui
+(cd pianobar_webui; npm ci; npm run build)
+rm -rf build/html
+cp -r pianobar_webui/build build/html
 
 # Start processes
-echo "Starting websocket server ..."
-pianobar-websocket &
-
-# Exit on failure
-echo "Startup procedure finished."
-wait -n
-echo "One of the background processes exited with '$?'."
-
-echo "Exiting program."
+echo "Starting server ..."
+echo "When startup finishes, it should be reachable at: http://127.0.0.1:3030"
+build/bin/pianobar_webserver -v -w build/html -p 3030

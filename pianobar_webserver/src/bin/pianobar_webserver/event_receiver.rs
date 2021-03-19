@@ -59,7 +59,7 @@ impl PianobarEventReceiver {
     pub async fn run(&self) -> Result<()> {
         log::info!("Start event handler ...");
         let listener = TcpListener::bind((Ipv4Addr::new(127, 0, 0, 1), self.port)).await?;
-        log::info!("Listening on port {}.", self.port);
+        log::debug!("Listening on port {}.", self.port);
 
         loop {
             let (mut socket, addr) = listener.accept().await?;

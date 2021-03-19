@@ -76,12 +76,12 @@ async fn main_with_result() -> Result<()> {
     let webserver_task = async move {
         let addr = (Ipv4Addr::UNSPECIFIED, config.port);
         if let Some(webpage_route) = webpage_route {
-            log::debug!("Serve websocket and webpage ...");
+            log::debug!("Serve websocket and webpage at port {} ...", config.port);
             warp::serve(websocket_route.or(webpage_route))
                 .run(addr)
                 .await;
         } else {
-            log::debug!("Serve websocket ...");
+            log::debug!("Serve websocket at port {} ...", config.port);
             warp::serve(websocket_route).run(addr).await;
         }
         Ok(())
