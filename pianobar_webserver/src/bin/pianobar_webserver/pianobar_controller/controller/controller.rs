@@ -48,7 +48,6 @@ impl PianobarActor {
 }
 
 pub struct PianobarController {
-    pianobar_process: Arc<Mutex<Child>>,
     // Wrapped in Mutex to prevent multiple people from sending simultaneously.
     pianobar_actor: Arc<Mutex<PianobarActor>>,
     pianobar_received_messages: broadcast::Sender<PianobarMessage>,
@@ -57,7 +56,9 @@ pub struct PianobarController {
 }
 
 impl PianobarController {
-    pub fn new(pianobar_command: &str) -> Result<PianobarController> {
+    pub fn start_pianobar_process(
+        pianobar_command: &str,
+    ) -> Result<(Arc<PianobarController>, Child)> {
         // Start the pianobar process and get the handle to the stdin and stdout streams
         log::info!("Start pianobar process ...");
         let mut pianobar_process = Command::new(pianobar_command)
@@ -94,13 +95,15 @@ impl PianobarController {
         let pianobar_actor = Arc::new(Mutex::new(PianobarActor::new(pianobar_stdin)));
 
         // Create the controller object
-        Ok(PianobarController {
-            pianobar_process: Arc::new(Mutex::new(pianobar_process)),
-            pianobar_actor,
-            pianobar_received_messages,
-            cancel_signal,
-            pianobar_stdout_task,
-        })
+        Ok((
+            Arc::new(PianobarController {
+                pianobar_actor,
+                pianobar_received_messages,
+                cancel_signal,
+                pianobar_stdout_task,
+            }),
+            pianobar_process,
+        ))
     }
 
     pub async fn take_actor(&self) -> tokio::sync::MutexGuard<'_, PianobarActor> {
@@ -115,22 +118,11 @@ impl PianobarController {
         tokio::try_join!(plugins::plugins(self), self.cancel_signal.wait())?;
         bail!("All controller tasks ended unexpectedly.");
     }
-
-    async fn kill(&self) -> Result<()> {
-        self.pianobar_process.lock().await.kill().await?;
-        Ok(())
-    }
 }
 
 impl Drop for PianobarController {
     fn drop(&mut self) {
         // Stop pianobar stdout parser task
         self.pianobar_stdout_task.abort();
-
-        // Stop pianobar process
-        match tokio::task::block_in_place(|| futures::executor::block_on(self.kill())) {
-            Ok(()) => log::info!("Killed pianobar process."),
-            Err(err) => log::warn!("Unable to kill pianobar: {}", err),
-        }
     }
 }

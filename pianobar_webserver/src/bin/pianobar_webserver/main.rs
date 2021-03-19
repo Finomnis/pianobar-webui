@@ -5,7 +5,6 @@ mod signal_handler;
 mod websocket;
 
 use std::net::Ipv4Addr;
-use std::sync::Arc;
 
 use anyhow::Result;
 use config::Config;
@@ -54,10 +53,13 @@ async fn main_with_result() -> Result<()> {
     set_pianobar_configs(&config.pianobar_config)?;
 
     info!("Create pianobar controller ...");
-    let pianobar_controller = Arc::new(PianobarController::new(&config.pianobar_path)?);
-    // Create actions object from weak-pointer controller, to make sure the pianobar
-    // process gets destroyed at the end of the program and not held in some tokio::spawn
-    let pianobar_actions = PianobarActions::new(Arc::downgrade(&pianobar_controller));
+    // Create pianobar_controller object.
+    // This also yields a pianobar_process object, which has the function of killing the
+    // pianobar process at the end of the current scope.
+    let (pianobar_controller, _pianobar_process) =
+        PianobarController::start_pianobar_process(&config.pianobar_path)?;
+    // Create actions object, to control the pianobar process
+    let pianobar_actions = PianobarActions::new(pianobar_controller.clone());
 
     info!("Create websocket ...");
     let websocket =
