@@ -1,12 +1,11 @@
 use super::messages::{parse_pianobar_messages, PianobarMessage};
-use pianobar_webserver::utils::cancel_signal::CancelSignal;
 
 use anyhow::{anyhow, bail, Result};
 use log;
 use std::{process::Stdio, sync::Arc};
 use tokio::{
     io::AsyncWriteExt,
-    process::{Child, ChildStdin, Command},
+    process::{Child, ChildStdin, ChildStdout, Command},
     sync::broadcast,
     sync::Mutex,
 };
@@ -46,12 +45,34 @@ impl PianobarActor {
     }
 }
 
+pub struct PianobarStdoutHandler {
+    pianobar_stdout: ChildStdout,
+    pianobar_received_messages: broadcast::Sender<PianobarMessage>,
+}
+
+impl PianobarStdoutHandler {
+    fn new(
+        pianobar_stdout: ChildStdout,
+        pianobar_received_messages: broadcast::Sender<PianobarMessage>,
+    ) -> Self {
+        Self {
+            pianobar_stdout,
+            pianobar_received_messages,
+        }
+    }
+    async fn run(&mut self) -> Result<()> {
+        parse_pianobar_messages(&mut self.pianobar_stdout, &self.pianobar_received_messages)
+            .await?;
+        Err(anyhow!("Pianobar process closed."))
+    }
+}
+
 #[derive(Clone)]
 pub struct PianobarController {
     // Wrapped in Mutex to prevent multiple people from sending simultaneously.
     pianobar_actor: Arc<Mutex<PianobarActor>>,
     pianobar_received_messages: broadcast::Sender<PianobarMessage>,
-    pianobar_process_stopped: Arc<CancelSignal>,
+    pianobar_stdout_handler: Arc<Mutex<PianobarStdoutHandler>>,
 }
 
 impl PianobarController {
@@ -75,24 +96,9 @@ impl PianobarController {
         // Create a broadcast channel for the communication with the stdout task
         let (pianobar_received_messages, _) = broadcast::channel(20);
 
-        // Create a cancel signal that allowes the stdout handler task to stop the controller
-        let pianobar_process_stopped = Arc::new(CancelSignal::new());
-
         // Spawn the stdout handler task
-        {
-            let process_stopped_setter = pianobar_process_stopped.clone();
-            let pianobar_received_messages_clone = pianobar_received_messages.clone();
-            tokio::spawn(async move {
-                match parse_pianobar_messages(pianobar_stdout, pianobar_received_messages_clone)
-                    .await
-                {
-                    Ok(()) => {
-                        process_stopped_setter.set("Pianobar stdout task closed.".to_string())
-                    }
-                    Err(err) => process_stopped_setter.set(format!("{}", err)),
-                };
-            });
-        }
+        let pianobar_stdout_handler =
+            PianobarStdoutHandler::new(pianobar_stdout, pianobar_received_messages.clone());
 
         // Create the pianobar actor
         let pianobar_actor = Arc::new(Mutex::new(PianobarActor::new(pianobar_stdin)));
@@ -102,7 +108,7 @@ impl PianobarController {
             PianobarController {
                 pianobar_actor,
                 pianobar_received_messages,
-                pianobar_process_stopped,
+                pianobar_stdout_handler: Arc::new(Mutex::new(pianobar_stdout_handler)),
             },
             pianobar_process,
         ))
@@ -116,7 +122,7 @@ impl PianobarController {
         self.pianobar_received_messages.subscribe()
     }
 
-    pub async fn watch_pianobar_process_alive(&self) -> Result<()> {
-        self.pianobar_process_stopped.wait().await
+    pub async fn run(&self) -> Result<()> {
+        self.pianobar_stdout_handler.lock().await.run().await
     }
 }

@@ -151,8 +151,8 @@ impl PianobarMessageParser {
 }
 
 pub async fn parse_pianobar_messages(
-    mut pianobar_stream: ChildStdout,
-    pianobar_received_messages: broadcast::Sender<PianobarMessage>,
+    pianobar_stream: &mut ChildStdout,
+    pianobar_received_messages: &broadcast::Sender<PianobarMessage>,
 ) -> Result<()> {
     let mut message_parser = PianobarMessageParser::new();
     loop {

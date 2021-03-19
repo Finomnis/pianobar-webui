@@ -105,7 +105,7 @@ async fn main_with_result() -> Result<()> {
     let result = tokio::select!(
         e = webserver_task => e,
         e = event_receiver.run() => e,
-        e = pianobar_controller.watch_pianobar_process_alive() => e,
+        e = pianobar_controller.run() => e,
         e = pianobar_state.run() => e,
         e = handle_interrupt_signals() => e,
         e = debug_printer.run() => e,
