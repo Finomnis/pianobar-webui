@@ -3,11 +3,12 @@ use crate::PianobarActions;
 
 use super::json_rpc::JsonRpcWebsocket;
 use super::pianobar_actions;
+use super::PianobarPlayerState;
 use anyhow::{self, Result};
 use jsonrpc_core as jsonrpc;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tokio::sync::broadcast;
+use tokio::sync::{broadcast, watch};
 use warp::ws::WebSocket;
 
 // use futures::FutureExt;
@@ -31,11 +32,16 @@ impl PianobarWebsocketConnection {
         }
     }
 
-    pub async fn run(self, ui_events: PianobarUiEventSource, pianobar_actions: PianobarActions) {
+    pub async fn run(
+        self,
+        ui_events: PianobarUiEventSource,
+        player_state: watch::Receiver<PianobarPlayerState>,
+        pianobar_actions: PianobarActions,
+    ) {
         let client_address = self.client_address.clone();
         log::info!("connected: {}", client_address);
         if let Err(err) = self
-            .run_with_error_handling(ui_events, pianobar_actions)
+            .run_with_error_handling(ui_events, player_state, pianobar_actions)
             .await
         {
             log::warn!("lost connection: {}", err);
@@ -66,6 +72,7 @@ impl PianobarWebsocketConnection {
     async fn run_with_error_handling(
         mut self,
         ui_events: PianobarUiEventSource,
+        player_state: watch::Receiver<PianobarPlayerState>,
         pianobar_actions: PianobarActions,
     ) -> Result<()> {
         // Send welcome message

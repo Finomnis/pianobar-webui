@@ -68,8 +68,11 @@ async fn main_with_result() -> Result<()> {
     let mut pianobar_state = PianobarPlayerStateWatcher::new(&pianobar_controller);
 
     info!("Create websocket ...");
-    let websocket =
-        PianobarWebsocket::new(event_receiver.get_event_source_creator(), pianobar_actions);
+    let websocket = PianobarWebsocket::new(
+        event_receiver.get_event_source_creator(),
+        pianobar_state.subscribe(),
+        pianobar_actions,
+    );
 
     // Create Websocket route
     let websocket_route = websocket.create_route("ws");

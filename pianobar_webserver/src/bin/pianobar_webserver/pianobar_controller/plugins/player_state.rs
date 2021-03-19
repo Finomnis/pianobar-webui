@@ -73,7 +73,7 @@ impl PianobarPlayerStateWatcher {
         }
     }
 
-    pub async fn subscribe(&self) -> watch::Receiver<PianobarPlayerState> {
+    pub fn subscribe(&self) -> watch::Receiver<PianobarPlayerState> {
         self.channel_out.clone()
     }
 }
