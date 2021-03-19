@@ -11,6 +11,8 @@ use config::Config;
 use event_receiver::PianobarEventReceiver;
 use log::info;
 use pianobar_controller::plugins::actions::PianobarActions;
+use pianobar_controller::plugins::debug_printer::DebugPrinter;
+use pianobar_controller::plugins::manual_controller::ManualController;
 use pianobar_controller::plugins::player_state::PianobarPlayerStateWatcher;
 use pianobar_controller::{set_pianobar_configs, PianobarController};
 use signal_handler::handle_interrupt_signals;
@@ -93,13 +95,21 @@ async fn main_with_result() -> Result<()> {
         Ok(())
     };
 
+    // Additional plugins
+    // Prints all pianobar player messages
+    let mut debug_printer = DebugPrinter::new(&pianobar_controller);
+    // Lets the player get controlled via keyboard
+    let mut manual_controller = ManualController::new(&pianobar_controller);
+
     info!("Starting tasks ...");
     let result = tokio::select!(
         e = webserver_task => e,
         e = event_receiver.run() => e,
-        e = pianobar_controller.run() => e,
+        e = pianobar_controller.watch_pianobar_process_alive() => e,
         e = pianobar_state.run() => e,
         e = handle_interrupt_signals() => e,
+        e = debug_printer.run() => e,
+        e = manual_controller.run() => e,
     );
 
     log::info!("Shut down ...");
