@@ -6,6 +6,7 @@ use super::pianobar_actions;
 use super::PianobarPlayerState;
 use anyhow::{self, Result};
 use jsonrpc_core as jsonrpc;
+use std::borrow::Borrow;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::{broadcast, watch};
@@ -54,6 +55,14 @@ impl PianobarWebsocketConnection {
             .send_notification("ui_event", jsonrpc::Params::Map(event.into()))
     }
 
+    fn send_player_state(&self, player_state: &PianobarPlayerState) -> Result<()> {
+        let mut params = serde_json::Map::new();
+        params.insert("state".to_string(), serde_json::to_value(player_state)?);
+
+        self.json_rpc_websocket
+            .send_notification("player_state", jsonrpc::Params::Map(params))
+    }
+
     fn send_welcome_message(&self, ui_initial_state: PianobarUiState) -> Result<()> {
         self.send_ui_event(PianobarUiEvent {
             command: "websocket_welcome".to_string(),
@@ -69,6 +78,17 @@ impl PianobarWebsocketConnection {
         }
     }
 
+    async fn player_state_task(
+        &self,
+        mut player_state: watch::Receiver<PianobarPlayerState>,
+    ) -> Result<()> {
+        loop {
+            player_state.changed().await?;
+            log::debug!("send new player state ...");
+            self.send_player_state(player_state.borrow().borrow())?;
+        }
+    }
+
     async fn run_with_error_handling(
         mut self,
         ui_events: PianobarUiEventSource,
@@ -81,13 +101,15 @@ impl PianobarWebsocketConnection {
 
         pianobar_actions::register(&mut self.json_rpc_websocket);
 
-        // Start event tasks
+        // Start tasks
         let events_task = self.events_task(ui_events.ui_events);
+        let player_state_task = self.player_state_task(player_state);
 
         // Wait until the first task finished
         tokio::select!(
             ret = self.json_rpc_websocket.run(Arc::new(pianobar_actions)) => ret,
             ret = events_task => ret,
+            ret = player_state_task => ret,
         )
     }
 }

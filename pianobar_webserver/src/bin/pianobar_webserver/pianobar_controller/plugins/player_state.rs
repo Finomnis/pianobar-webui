@@ -1,8 +1,9 @@
 use super::{PianobarController, PianobarMessage};
 use anyhow::{bail, Result};
+use serde::Serialize;
 use tokio::sync::{broadcast, watch};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct PianobarPlayerState {
     pub song_time_played: u32,
     pub song_time_total: u32,
