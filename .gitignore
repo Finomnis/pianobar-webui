@@ -1,6 +1,3 @@
 /.vscode/
-/.venv/
 /pianobar_webserver/target/
-*.egg-info/
-__pycache__/
 /build/
