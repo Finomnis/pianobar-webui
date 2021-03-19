@@ -1,7 +1,7 @@
 mod actions;
 mod controller;
 mod pianobar_configurator;
-mod plugins;
+pub mod plugins;
 
 pub use actions::PianobarActions;
 pub use controller::PianobarActor;

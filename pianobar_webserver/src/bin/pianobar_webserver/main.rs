@@ -10,6 +10,7 @@ use anyhow::Result;
 use config::Config;
 use event_receiver::PianobarEventReceiver;
 use log::info;
+use pianobar_controller::plugins::player_state::PianobarPlayerStateWatcher;
 use pianobar_controller::{set_pianobar_configs, PianobarActions, PianobarController};
 use signal_handler::handle_interrupt_signals;
 use structopt::StructOpt;
@@ -60,6 +61,8 @@ async fn main_with_result() -> Result<()> {
         PianobarController::start_pianobar_process(&config.pianobar_path)?;
     // Create actions object, to control the pianobar process
     let pianobar_actions = PianobarActions::new(pianobar_controller.clone());
+    // Create state watcher, to stream pianobar player state to websocket
+    let mut pianobar_state = PianobarPlayerStateWatcher::new(&pianobar_controller);
 
     info!("Create websocket ...");
     let websocket =
@@ -94,6 +97,7 @@ async fn main_with_result() -> Result<()> {
         e = webserver_task => e,
         e = event_receiver.run() => e,
         e = pianobar_controller.run() => e,
+        e = pianobar_state.run() => e,
         e = handle_interrupt_signals() => e,
     );
 

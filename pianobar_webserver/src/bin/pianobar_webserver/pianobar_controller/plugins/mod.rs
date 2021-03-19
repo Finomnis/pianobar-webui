@@ -1,7 +1,8 @@
 mod debug_printer;
 mod manual_controller;
+pub mod player_state;
 
-use super::PianobarController;
+use super::{PianobarController, PianobarMessage};
 use anyhow::Result;
 
 pub async fn plugins(pianobar: &PianobarController) -> Result<()> {
