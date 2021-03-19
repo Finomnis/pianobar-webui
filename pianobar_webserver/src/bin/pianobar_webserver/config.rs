@@ -13,7 +13,12 @@ pub struct Config {
     #[structopt(short, long, help = "The path to the build directory of the web ui")]
     pub webpage_folder: Option<String>,
 
-    #[structopt(short, long, parse(from_occurrences), help = "Increases verbosity")]
+    #[structopt(
+        short,
+        long,
+        parse(from_occurrences),
+        help = "Increases verbosity. Can be used multiple times."
+    )]
     pub verbose: usize,
 
     #[structopt(
