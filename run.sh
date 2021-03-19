@@ -14,13 +14,22 @@ mkdir -p build
 if ! command -v cargo &> /dev/null
 then
     echo "The Rust compiler does not seem to be installed on this system."
-    echo "It is required to run this program."
+    echo "It is required for this program to run."
     echo "For more information, visit: https://rustup.rs/"
     exit 1
 fi
 
 # Compile the server binaries
 cargo install --path pianobar_webserver --root build
+
+# Check if node is installed
+if ! command -v npm &> /dev/null
+then
+    echo "The node package manager does not seem to be installed on this system."
+    echo "It is required for this program to run."
+    echo "For more information, visit: https://github.com/nvm-sh/nvm/blob/master/README.md"
+    exit 1
+fi
 
 # Compile the webui
 (cd pianobar_webui; npm ci; npm run build)
