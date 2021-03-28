@@ -1,4 +1,4 @@
-import { Box, IconButton, LinearProgress, Theme, withStyles } from "@material-ui/core";
+import { Box, Hidden, IconButton, LinearProgress, Theme, withStyles } from "@material-ui/core";
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import PauseIcon from '@material-ui/icons/Pause';
 import SkipNextIcon from '@material-ui/icons/SkipNext';
@@ -7,8 +7,8 @@ import {
     selectPianobarPaused,
     selectPianobarSongDurationSeconds,
     selectPianobarSongPlayedSeconds,
-    //selectPianobarSongDurationTime,
-    //selectPianobarSongPlayedTime,
+    selectPianobarSongDurationTime,
+    selectPianobarSongPlayedTime,
 } from "../../../pianobar/store/selector";
 import { useAppDispatch } from "../../../../app/store";
 import { pauseAction, resumeAction, skipAction } from "../../../pianobar/actions/simpleActions";
@@ -30,12 +30,28 @@ const SongLinearProgress = withStyles((theme: Theme) => {
 type PlayerControllerProps = {
 };
 
-const PlayerController = (props: PlayerControllerProps) => {
-    const paused = useSelector(selectPianobarPaused);
+const ProgressBar = () => {
     const songDurationSeconds = useSelector(selectPianobarSongDurationSeconds);
     const songPlayedSeconds = useSelector(selectPianobarSongPlayedSeconds);
-    //const songDurationTime = useSelector(selectPianobarSongDurationTime);
-    //const songPlayedTime = useSelector(selectPianobarSongPlayedTime);
+    return <SongLinearProgress color="primary" variant="determinate" value={100 * (songPlayedSeconds / songDurationSeconds)} />;
+};
+
+
+const SongTime = () => {
+    const songDurationTime = useSelector(selectPianobarSongDurationTime);
+    const songPlayedTime = useSelector(selectPianobarSongPlayedTime);
+    return <Box flex="0 0 auto" display="flex" flexDirection="row" alignItems="stretch"
+        marginRight="2em" style={{ opacity: 0.5 }}
+        fontSize=".9em"
+    >
+        <Box>{songPlayedTime}</Box>
+        <Box marginX=".8em" bgcolor="white" width="1px" />
+        <Box>{songDurationTime}</Box>
+    </Box>;
+};
+
+const PlayerController = (props: PlayerControllerProps) => {
+    const paused = useSelector(selectPianobarPaused);
 
     const dispatch = useAppDispatch();
 
@@ -48,9 +64,7 @@ const PlayerController = (props: PlayerControllerProps) => {
             alignItems="stretch"
             overflow="hidden"
         >
-            <Box>
-                <SongLinearProgress color="primary" variant="determinate" value={100 * (songPlayedSeconds / songDurationSeconds)} />
-            </Box>
+            <ProgressBar />
             <Box
                 color="primary.contrastText"
                 bgcolor="primary.main"
@@ -59,7 +73,7 @@ const PlayerController = (props: PlayerControllerProps) => {
                 alignItems="center"
                 overflow="hidden"
             >
-                <Box flex="1 0 0" display="flex" justifyContent="flex-end" className={styles.buttonList}>
+                <Box flex="1 0 0" display="flex" justifyContent="flex-end">
                 </Box>
                 <Box flex="0 0 auto" >
                     <IconButton color="inherit">
@@ -74,12 +88,18 @@ const PlayerController = (props: PlayerControllerProps) => {
                         }
                     </IconButton>
                 </Box>
-                <Box flex="1 0 0" display="flex" justifyContent="flex-start" className={styles.buttonList}>
-                    <Box>
+                <Box flex="1 0 0" display="flex" justifyContent="flex-start" alignItems="center">
+                    <Box className={styles.buttonHolder}>
                         <IconButton color="inherit">
                             <SkipNextIcon onClick={() => dispatch(skipAction.run())} />
                         </IconButton>
                     </Box>
+
+                    <Box flex="1 0 0" /> {/* SPACER */}
+
+                    <Hidden xsDown>
+                        <SongTime />
+                    </Hidden>
                 </Box>
             </Box >
         </Box>

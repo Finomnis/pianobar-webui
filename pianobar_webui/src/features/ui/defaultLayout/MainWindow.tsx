@@ -6,10 +6,7 @@ import {
     selectPianobarAlbum,
     selectPianobarArtist,
     selectPianobarConnected,
-    selectPianobarPaused,
     selectPianobarRawUiState,
-    selectPianobarSongDurationTime,
-    selectPianobarSongPlayedTime,
     selectPianobarStationName,
     selectPianobarStations,
     selectPianobarTitle
@@ -24,9 +21,6 @@ const MainWindow = () => {
     let pianobarAlbum = useSelector(selectPianobarAlbum);
     let pianobarArtist = useSelector(selectPianobarArtist);
     let pianobarStationName = useSelector(selectPianobarStationName);
-    let pianobarPaused = useSelector(selectPianobarPaused);
-    let pianobarSongPlayedTime = useSelector(selectPianobarSongPlayedTime);
-    let pianobarSongDurationTime = useSelector(selectPianobarSongDurationTime);
 
     let connected = useSelector(selectPianobarConnected);
 
@@ -66,8 +60,6 @@ const MainWindow = () => {
                         </tr>
                     </tbody>
                 </table>
-                <br />
-                {pianobarSongPlayedTime}/{pianobarSongDurationTime}&nbsp;{pianobarPaused ? "\u23F8" : "\u23F5"}
                 <br />
                 <br />
                 <form onSubmit={changeStation}>
