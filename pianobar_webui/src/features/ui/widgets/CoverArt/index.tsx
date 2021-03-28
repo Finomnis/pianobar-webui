@@ -1,3 +1,4 @@
+import React from "react";
 import { useSelector } from "react-redux";
 import { selectPianobarCoverArt } from "../../../pianobar/store/selector";
 import note from "./musical-note.svg";

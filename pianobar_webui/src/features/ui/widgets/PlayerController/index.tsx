@@ -54,15 +54,11 @@ const SongTime = React.memo(() => {
 const PlayPauseButton = React.memo(() => {
     const dispatch = useAppDispatch();
     const paused = useSelector(selectPianobarPaused);
-    return <IconButton color="inherit">
+    return <IconButton color="inherit" onClick={() => paused ? dispatch(resumeAction.run()) : dispatch(pauseAction.run())}>
         {
             paused
-                ? <PlayArrowIcon
-                    style={{ fontSize: 45 }}
-                    onClick={() => dispatch(resumeAction.run())} />
-                : <PauseIcon
-                    style={{ fontSize: 45 }}
-                    onClick={() => dispatch(pauseAction.run())} />
+                ? <PlayArrowIcon style={{ fontSize: 45 }} />
+                : <PauseIcon style={{ fontSize: 45 }} />
         }
     </IconButton>
 });
@@ -94,8 +90,8 @@ const PlayerController = (props: PlayerControllerProps) => {
                 </Box>
                 <Box flex="1 0 0" display="flex" justifyContent="flex-start" alignItems="center">
                     <Box className={styles.buttonHolder}>
-                        <IconButton color="inherit">
-                            <SkipNextIcon onClick={() => dispatch(skipAction.run())} />
+                        <IconButton color="inherit" onClick={() => dispatch(skipAction.run())} >
+                            <SkipNextIcon />
                         </IconButton>
                     </Box>
 
