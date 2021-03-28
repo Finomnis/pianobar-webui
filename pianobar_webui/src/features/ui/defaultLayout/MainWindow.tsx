@@ -92,7 +92,7 @@ const MainWindow = () => {
                     <tbody>{stateList}</tbody>
                 </table>
             </Box>
-            <PlayerController width="100%" height="auto" />
+            <PlayerController />
         </Box >
     );
 };
