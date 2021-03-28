@@ -1,6 +1,7 @@
+import { Box } from "@material-ui/core";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "../../../app/store";
-import { changeStationAction, pauseAction, resumeAction, skipAction } from "../../pianobar/actions/simpleActions";
+import { changeStationAction } from "../../pianobar/actions/simpleActions";
 import {
     selectPianobarAlbum,
     selectPianobarArtist,
@@ -14,6 +15,7 @@ import {
     selectPianobarTitle
 } from "../../pianobar/store/selector";
 import CoverArt from "../widgets/CoverArt";
+import PlayerController from "../widgets/PlayerController";
 
 const MainWindow = () => {
     let uiState = useSelector(selectPianobarRawUiState);
@@ -47,57 +49,51 @@ const MainWindow = () => {
     }
 
     return (
-        <div style={{
-            width: "100%",
-            height: "100%",
-            overflow: "auto",
-        }}>
-            <CoverArt width="300px" height="300px" />
-            <br />
-            - {pianobarStationName} -
-            <br />
-            <table>
-                <tbody>
-                    <tr>
-                        <td>Song:</td><td>{pianobarTitle}</td>
-                    </tr><tr>
-                        <td>Artist:</td><td>{pianobarArtist}</td>
-                    </tr><tr>
-                        <td>Album:</td><td>{pianobarAlbum}</td>
-                    </tr>
-                </tbody>
-            </table>
-            <br />
-            {pianobarSongPlayedTime}/{pianobarSongDurationTime}&nbsp;{pianobarPaused ? "\u23F8" : "\u23F5"}
-            <br />
-            <br />
-            <form onSubmit={changeStation}>
-                <label>Station:&nbsp;
+        <Box display="flex" flexDirection="column" width="100%" height="100%">
+            <Box width="100%" height="100%" overflow="auto">
+                <CoverArt width="300px" height="300px" />
+                <br />
+                - {pianobarStationName} -
+                <br />
+                <table>
+                    <tbody>
+                        <tr>
+                            <td>Song:</td><td>{pianobarTitle}</td>
+                        </tr><tr>
+                            <td>Artist:</td><td>{pianobarArtist}</td>
+                        </tr><tr>
+                            <td>Album:</td><td>{pianobarAlbum}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <br />
+                {pianobarSongPlayedTime}/{pianobarSongDurationTime}&nbsp;{pianobarPaused ? "\u23F8" : "\u23F5"}
+                <br />
+                <br />
+                <form onSubmit={changeStation}>
+                    <label>Station:&nbsp;
                     <select required>
-                        {
-                            pianobarStations.map((station, index) => (
-                                <option value={index} key={index}>{station}</option>
-                            ))
-                        }
-                    </select>
-                    <button>Change Station</button>
-                </label>
-            </form>
-            <br />
-            <button onClick={() => dispatch(resumeAction.run())}>Resume</button>
-            &nbsp;&nbsp;
-            <button onClick={() => dispatch(pauseAction.run())}>Pause</button>
-            <br /><br />
-            <button onClick={() => dispatch(skipAction.run())}>Skip</button>
-            <br /><br /><br /><br />
-            Connected: {connected ? "yes" : "no"}
-            <br /><br />
-            Raw state:
-            <br /><br />
-            <table>
-                <tbody>{stateList}</tbody>
-            </table>
-        </div>
+                            {
+                                pianobarStations.map((station, index) => (
+                                    <option value={index} key={index}>{station}</option>
+                                ))
+                            }
+                        </select>
+                        <button>Change Station</button>
+                    </label>
+                </form>
+                <br />
+                <br /><br /><br /><br />
+                Connected: {connected ? "yes" : "no"}
+                <br /><br />
+                Raw state:
+                <br /><br />
+                <table>
+                    <tbody>{stateList}</tbody>
+                </table>
+            </Box>
+            <PlayerController width="100%" height="auto" />
+        </Box >
     );
 };
 
