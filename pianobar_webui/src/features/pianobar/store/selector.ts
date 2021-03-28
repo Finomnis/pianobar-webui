@@ -1,3 +1,4 @@
+import { createSelector } from "@reduxjs/toolkit";
 import { RootState } from "../../../app/store";
 
 // Selectors
@@ -39,9 +40,6 @@ export const selectPianobarTitle = (state: RootState): string => {
     return selectPianobarStateString(state, "title");
 };
 
-export const selectPianobarStationName = (state: RootState): string => {
-    return selectPianobarStateString(state, "stationName");
-};
 
 export const selectPianobarRating = (state: RootState): number => {
     return selectPianobarStateNumber(state, "rating");
@@ -67,6 +65,27 @@ export const selectPianobarStations = (state: RootState): string[] => {
 
     return result;
 };
+
+
+export const selectPianobarStationName = (state: RootState): string => {
+    return selectPianobarStateString(state, "stationName");
+};
+
+export const selectPianobarStationId = createSelector(
+    selectPianobarStationName,
+    selectPianobarStations,
+    (stationName, stations) => {
+        if (stations.length === 0) {
+            return 0;
+        }
+        const stationId = stations.indexOf(stationName);
+        if (stationId < 0) {
+            console.error("Current station is not in the list of stations!")
+        }
+        return stationId;
+    }
+)
+
 
 export const selectPianobarConnected = (state: RootState): boolean => state.pianobar.websocket.connected;
 export const selectPianobarPaused = (state: RootState): boolean => state.pianobar.player.paused;

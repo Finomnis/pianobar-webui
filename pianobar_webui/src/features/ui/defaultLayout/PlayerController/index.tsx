@@ -16,7 +16,7 @@ import { pauseAction, resumeAction, skipAction } from "../../../pianobar/actions
 import styles from "./styles.module.css";
 
 const SongLinearProgress = withStyles((theme: Theme) => {
-    /* console.log("THEME:", theme); */
+    console.log("THEME:", theme);
     return {
         root: {
             height: 4,
