@@ -28,15 +28,11 @@ const SongLinearProgress = withStyles((theme: Theme) => {
     };
 })(LinearProgress);
 
-type PlayerControllerProps = {
-};
-
 const ProgressBar = React.memo(() => {
     const songDurationSeconds = useSelector(selectPianobarSongDurationSeconds);
     const songPlayedSeconds = useSelector(selectPianobarSongPlayedSeconds);
     return <SongLinearProgress color="primary" variant="determinate" value={100 * (songPlayedSeconds / songDurationSeconds)} />;
 });
-
 
 const SongTime = React.memo(() => {
     const songDurationTime = useSelector(selectPianobarSongDurationTime);
@@ -63,7 +59,7 @@ const PlayPauseButton = React.memo(() => {
     </IconButton>
 });
 
-const PlayerController = (props: PlayerControllerProps) => {
+const PlayerController = () => {
     const dispatch = useAppDispatch();
     return (
         <Box
