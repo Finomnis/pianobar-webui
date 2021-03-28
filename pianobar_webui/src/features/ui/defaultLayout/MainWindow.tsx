@@ -47,7 +47,11 @@ const MainWindow = () => {
     }
 
     return (
-        <div>
+        <div style={{
+            width: "100%",
+            height: "100%",
+            overflow: "auto",
+        }}>
             <CoverArt width="300px" height="300px" />
             <br />
             - {pianobarStationName} -

@@ -1,4 +1,5 @@
 import React from "react";
+import CssBaseline from '@material-ui/core/CssBaseline';
 import ReactDOM from "react-dom";
 import App from "./App";
 import store from "./app/store";
@@ -7,6 +8,7 @@ import * as serviceWorker from "./serviceWorker";
 
 ReactDOM.render(
     <React.StrictMode>
+        <CssBaseline />
         <Provider store={store}>
             <App />
         </Provider>
