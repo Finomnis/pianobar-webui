@@ -1,6 +1,6 @@
 import { useSelector } from "react-redux";
-import { useAppDispatch } from "../../app/store";
-import { changeStationAction, pauseAction, resumeAction, skipAction } from "../pianobar/actions/simpleActions";
+import { useAppDispatch } from "../../../app/store";
+import { changeStationAction, pauseAction, resumeAction, skipAction } from "../../pianobar/actions/simpleActions";
 import {
     selectPianobarAlbum,
     selectPianobarArtist,
@@ -12,8 +12,8 @@ import {
     selectPianobarStationName,
     selectPianobarStations,
     selectPianobarTitle
-} from "../pianobar/store/selector";
-import CoverArt from "./CoverArt";
+} from "../../pianobar/store/selector";
+import CoverArt from "../widgets/CoverArt";
 
 const MainWindow = () => {
     let uiState = useSelector(selectPianobarRawUiState);

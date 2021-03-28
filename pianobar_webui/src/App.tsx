@@ -1,4 +1,4 @@
-import MainWindow from "./features/mainwindow/MainWindow";
+import MainWindow from "./features/ui/defaultLayout/MainWindow";
 
 function App() {
     return (
