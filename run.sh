@@ -36,6 +36,15 @@ fi
 rm -rf build/html
 cp -r pianobar_webui/build build/html
 
+# Check if pianobar is installed
+if ! command -v pianobar &> /dev/null
+then
+    echo "Pianobar does not seem to be installed on this system."
+    echo "It is required for this program to run."
+    echo "For more information, visit: https://github.com/PromyLOPh/pianobar"
+    exit 1
+fi
+
 # Start processes
 echo "Starting server ..."
 echo "When startup finishes, it should be reachable at: http://127.0.0.1:3030"
