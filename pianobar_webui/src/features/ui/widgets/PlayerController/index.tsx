@@ -75,9 +75,11 @@ const PlayerController = (props: PlayerControllerProps) => {
                     </IconButton>
                 </Box>
                 <Box flex="1 0 0" display="flex" justifyContent="flex-start" className={styles.buttonList}>
-                    <IconButton color="inherit">
-                        <SkipNextIcon onClick={() => dispatch(skipAction.run())} />
-                    </IconButton>
+                    <Box>
+                        <IconButton color="inherit">
+                            <SkipNextIcon onClick={() => dispatch(skipAction.run())} />
+                        </IconButton>
+                    </Box>
                 </Box>
             </Box >
         </Box>
