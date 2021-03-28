@@ -6,13 +6,14 @@ Bootstrap stories:
     + ui state -> redux
 + write pianobar wrapper/controller
 + implement json-rpc functions
-
-
-
-- Implement play/pause/time state based on the "current time" command line messages of pianobar.
-    - 'pause' emits same time twice, so comparing previous/new time should work
++ Implement play/pause/time state based on the "current time" command line messages of pianobar.
+    + 'pause' emits same time twice, so comparing previous/new time should work
 
 
 Continued stories:
 <implement ui features>
 - implement state display
+- implement song history
+- implement 'new station' functionality
+    - based on artist/song
+    - based on style
