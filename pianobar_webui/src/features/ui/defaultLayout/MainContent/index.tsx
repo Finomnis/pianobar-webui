@@ -13,6 +13,7 @@ import {
     selectPianobarStations,
     selectPianobarTitle
 } from "../../../pianobar/store/selector";
+import Popups from "../Popups";
 
 const MainContent = () => {
 
@@ -83,6 +84,8 @@ const MainContent = () => {
             <table>
                 <tbody>{stateList}</tbody>
             </table>
+
+            <Popups />
         </Box>
     );
 };
