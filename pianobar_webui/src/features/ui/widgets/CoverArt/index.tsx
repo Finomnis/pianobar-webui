@@ -49,4 +49,4 @@ const CoverArt = (props: CoverArtProps) => {
         </div>
     );
 };
-export default CoverArt;
+export default React.memo(CoverArt);

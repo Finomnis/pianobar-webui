@@ -1,3 +1,4 @@
+import React from "react";
 import { Box, Hidden, IconButton, LinearProgress, Theme, withStyles } from "@material-ui/core";
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import PauseIcon from '@material-ui/icons/Pause';
@@ -30,14 +31,14 @@ const SongLinearProgress = withStyles((theme: Theme) => {
 type PlayerControllerProps = {
 };
 
-const ProgressBar = () => {
+const ProgressBar = React.memo(() => {
     const songDurationSeconds = useSelector(selectPianobarSongDurationSeconds);
     const songPlayedSeconds = useSelector(selectPianobarSongPlayedSeconds);
     return <SongLinearProgress color="primary" variant="determinate" value={100 * (songPlayedSeconds / songDurationSeconds)} />;
-};
+});
 
 
-const SongTime = () => {
+const SongTime = React.memo(() => {
     const songDurationTime = useSelector(selectPianobarSongDurationTime);
     const songPlayedTime = useSelector(selectPianobarSongPlayedTime);
     return <Box flex="0 0 auto" display="flex" flexDirection="row" alignItems="stretch"
@@ -48,13 +49,26 @@ const SongTime = () => {
         <Box marginX=".8em" bgcolor="white" width="1px" />
         <Box>{songDurationTime}</Box>
     </Box>;
-};
+});
+
+const PlayPauseButton = React.memo(() => {
+    const dispatch = useAppDispatch();
+    const paused = useSelector(selectPianobarPaused);
+    return <IconButton color="inherit">
+        {
+            paused
+                ? <PlayArrowIcon
+                    style={{ fontSize: 45 }}
+                    onClick={() => dispatch(resumeAction.run())} />
+                : <PauseIcon
+                    style={{ fontSize: 45 }}
+                    onClick={() => dispatch(pauseAction.run())} />
+        }
+    </IconButton>
+});
 
 const PlayerController = (props: PlayerControllerProps) => {
-    const paused = useSelector(selectPianobarPaused);
-
     const dispatch = useAppDispatch();
-
     return (
         <Box
             display="flex"
@@ -76,17 +90,7 @@ const PlayerController = (props: PlayerControllerProps) => {
                 <Box flex="1 0 0" display="flex" justifyContent="flex-end">
                 </Box>
                 <Box flex="0 0 auto" >
-                    <IconButton color="inherit">
-                        {
-                            paused
-                                ? <PlayArrowIcon
-                                    style={{ fontSize: 45 }}
-                                    onClick={() => dispatch(resumeAction.run())} />
-                                : <PauseIcon
-                                    style={{ fontSize: 45 }}
-                                    onClick={() => dispatch(pauseAction.run())} />
-                        }
-                    </IconButton>
+                    <PlayPauseButton />
                 </Box>
                 <Box flex="1 0 0" display="flex" justifyContent="flex-start" alignItems="center">
                     <Box className={styles.buttonHolder}>
@@ -105,4 +109,4 @@ const PlayerController = (props: PlayerControllerProps) => {
         </Box>
     );
 };
-export default PlayerController;
+export default React.memo(PlayerController);
