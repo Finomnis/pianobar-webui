@@ -60,15 +60,17 @@ const MainContent = () => {
             </Box>
 
             <Box flex="1 0 0" /> {/* space */}
-            <Typography variant="h6">
-                {pianobarTitle}
-            </Typography>
-            <Typography>
-                {pianobarArtist}
-            </Typography>
-            <Typography>
-                {pianobarAlbum}
-            </Typography>
+            <Box width="100%">
+                <Typography variant="h6" align="center" noWrap>
+                    {pianobarTitle}
+                </Typography>
+                <Typography noWrap align="center">
+                    {pianobarArtist}
+                </Typography>
+                <Typography noWrap align="center">
+                    {pianobarAlbum}
+                </Typography>
+            </Box>
             <Box flex="1 0 0" /> {/* space */}
 
             <Popups />
