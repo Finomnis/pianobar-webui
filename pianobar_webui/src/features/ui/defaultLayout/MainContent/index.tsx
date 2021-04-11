@@ -40,6 +40,7 @@ const MainContent = () => {
             flexDirection="column"
             alignItems="center"
         >
+            <Box flex="1 0 0" /> {/* space */}
             <Select
                 native
                 value={pianobarStationId}
@@ -52,8 +53,13 @@ const MainContent = () => {
                     ))
                 }
             </Select>
-            <CoverArt width="300px" height="300px" />
+            <Box flex="1 0 0" /> {/* space */}
 
+            <Box flex="10 0 0" width="90%">
+                <CoverArt />
+            </Box>
+
+            <Box flex="1 0 0" /> {/* space */}
             <Typography variant="h6">
                 {pianobarTitle}
             </Typography>
@@ -63,6 +69,7 @@ const MainContent = () => {
             <Typography>
                 {pianobarAlbum}
             </Typography>
+            <Box flex="1 0 0" /> {/* space */}
 
             <Popups />
         </Box >

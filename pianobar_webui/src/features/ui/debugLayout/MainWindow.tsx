@@ -1,3 +1,4 @@
+import { Box } from "@material-ui/core";
 import { useSelector } from "react-redux";
 import { useAppDispatch } from "../../../app/store";
 import { changeStationAction, pauseAction, resumeAction, skipAction } from "../../pianobar/actions/simpleActions";
@@ -52,7 +53,9 @@ const MainWindow = () => {
             height: "100%",
             overflow: "auto",
         }}>
-            <CoverArt width="300px" height="300px" />
+            <Box width="400px" height="300px" >
+                <CoverArt />
+            </Box>
             <br />
             - {pianobarStationName} -
             <br />
