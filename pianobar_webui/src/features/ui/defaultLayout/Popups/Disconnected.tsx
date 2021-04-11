@@ -1,4 +1,4 @@
-import { Backdrop, CircularProgress, createStyles, makeStyles, Theme } from "@material-ui/core";
+import { Backdrop, Box, CircularProgress, createStyles, makeStyles, Theme } from "@material-ui/core";
 import React from "react";
 import { useSelector } from "react-redux";
 import { selectPianobarConnected } from "../../../pianobar/store/selector";
@@ -17,7 +17,11 @@ const Disconnected = () => {
     const connected = useSelector(selectPianobarConnected);
     return (
         <Backdrop className={classes.backdrop} open={!connected}>
-            <CircularProgress color="inherit" />
+            <Box display="flex" flexDirection="column" alignItems="center">
+                <Box marginBottom="1.5em">Disconnected from pianobar server.</Box>
+                <CircularProgress color="inherit" />
+                <Box marginTop="1.5em">Reconnecting ...</Box>
+            </Box>
         </Backdrop>
     );
 };
