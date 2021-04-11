@@ -9,6 +9,7 @@ Bootstrap stories:
 + Implement play/pause/time state based on the "current time" command line messages of pianobar.
     + 'pause' emits same time twice, so comparing previous/new time should work
 
+- Fix bug where 'current stations' shows station #0 although no station is playing
 
 Continued stories:
 <implement ui features>
