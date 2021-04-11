@@ -59,7 +59,7 @@ const MainContent = () => {
                 <CoverArt />
             </Box>
 
-            <Box flex="1 0 0" /> {/* space */}
+            <Box flex="0.7 0 0" /> {/* space */}
             <Box width="100%">
                 <Typography variant="h6" align="center" noWrap>
                     {pianobarTitle}
