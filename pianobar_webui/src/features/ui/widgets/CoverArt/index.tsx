@@ -20,7 +20,7 @@ const CoverArt = () => {
                         width={width}
                         height={height}
                     >
-                        <Box width={length} height={length} boxShadow={8}>
+                        <Box width={length} height={length} boxShadow={6}>
                             {coverArtUrl === "" ? (
                                 <div
                                     style={{
