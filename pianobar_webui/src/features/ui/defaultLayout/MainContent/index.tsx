@@ -60,7 +60,7 @@ const MainContent = () => {
             </Box>
 
             <Box flex="0.7 0 0" /> {/* space */}
-            <Box width="100%">
+            <Box width="90%">
                 <Typography variant="h6" align="center" noWrap>
                     {pianobarTitle}
                 </Typography>

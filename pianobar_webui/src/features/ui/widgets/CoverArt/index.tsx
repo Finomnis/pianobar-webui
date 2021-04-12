@@ -19,37 +19,38 @@ const CoverArt = () => {
                         alignItems="center"
                         width={width}
                         height={height}
-                        overflow="hidden"
                     >
-                        { coverArtUrl === "" ? (
-                            <div
-                                style={{
-                                    width: length,
-                                    height: length,
-                                    display: "flex",
-                                    background: "#d3d3d3",
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                }}
-                            >
+                        <Box width={length} height={length} boxShadow={8}>
+                            {coverArtUrl === "" ? (
+                                <div
+                                    style={{
+                                        width: "100%",
+                                        height: "100%",
+                                        display: "flex",
+                                        background: "#d3d3d3",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                    }}
+                                >
+                                    <img
+                                        src={note}
+                                        alt="coverArtPlaceholder"
+                                        width="50%"
+                                        height="50%"
+                                        key="coverArtFallback"
+                                    />
+                                </div>
+                            ) : (
                                 <img
-                                    src={note}
-                                    alt="coverArtPlaceholder"
-                                    width="50%"
-                                    height="50%"
-                                    key="coverArtFallback"
+                                    src={coverArtUrl}
+                                    alt="coverArt"
+                                    width="100%"
+                                    height="100%"
+                                    key="coverArt"
                                 />
-                            </div>
-                        ) : (
-                            <img
-                                src={coverArtUrl}
-                                alt="coverArt"
-                                width={length}
-                                height={length}
-                                key="coverArt"
-                            />
-                        )
-                        }
+                            )
+                            }
+                        </Box>
                     </Box>
                 );
             }}
