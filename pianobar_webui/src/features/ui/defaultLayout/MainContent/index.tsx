@@ -43,18 +43,20 @@ const MainContent = () => {
             alignItems="center"
         >
             <Box flex="1 0 0" /> {/* space */}
-            <Select
-                native
-                value={pianobarStationId}
-                onChange={handleChange}
-                label="Station"
-            >
-                {
-                    pianobarStations.map((station, index) => (
-                        <option value={index} key={index}>{station}</option>
-                    ))
-                }
-            </Select>
+            <Box maxWidth="90%">
+                <Select
+                    native
+                    value={pianobarStationId}
+                    onChange={handleChange}
+                >
+                    {(pianobarStationId === -1) ? <option disabled value={-1} key={-1}>- Select Station -</option> : null}
+                    {
+                        pianobarStations.map((station, index) => (
+                            <option value={index} key={index}>{station}</option>
+                        ))
+                    }
+                </Select>
+            </Box>
             <Box flex="1 0 0" /> {/* space */}
 
             <Box flex="10 0 0" width="90%">

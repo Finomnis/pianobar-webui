@@ -76,7 +76,7 @@ export const selectPianobarStationId = createSelector(
     selectPianobarStations,
     (stationName, stations) => {
         if (stations.length === 0) {
-            return 0;
+            return -1;
         }
         const stationId = stations.indexOf(stationName);
         if (stationId < 0) {
