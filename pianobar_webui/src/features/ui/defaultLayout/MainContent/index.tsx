@@ -1,9 +1,10 @@
 import React from "react";
 import { Box, Select, Typography } from "@material-ui/core";
+import { useSelector } from "react-redux";
+
 import { useAppDispatch } from "../../../../app/store";
 import CoverArt from "../../widgets/CoverArt";
 import { changeStationAction } from "../../../pianobar/actions/simpleActions";
-import { useSelector } from "react-redux";
 import {
     selectPianobarAlbum,
     selectPianobarArtist,
@@ -12,6 +13,7 @@ import {
     selectPianobarTitle
 } from "../../../pianobar/store/selector";
 import Popups from "../Popups";
+import TextAutoShrinker from "../../widgets/TextAutoShrinker";
 
 const MainContent = () => {
 
@@ -62,13 +64,19 @@ const MainContent = () => {
             <Box flex="0.7 0 0" /> {/* space */}
             <Box width="90%">
                 <Typography variant="h6" align="center" noWrap>
-                    {pianobarTitle}
+                    <TextAutoShrinker>
+                        {pianobarTitle}
+                    </TextAutoShrinker>
                 </Typography>
                 <Typography noWrap align="center">
-                    {pianobarArtist}
+                    <TextAutoShrinker>
+                        {pianobarArtist}
+                    </TextAutoShrinker>
                 </Typography>
                 <Typography noWrap align="center">
-                    {pianobarAlbum}
+                    <TextAutoShrinker>
+                        {pianobarAlbum}
+                    </TextAutoShrinker>
                 </Typography>
             </Box>
             <Box flex="1 0 0" /> {/* space */}
