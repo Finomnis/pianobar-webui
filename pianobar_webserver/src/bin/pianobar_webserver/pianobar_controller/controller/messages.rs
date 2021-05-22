@@ -96,6 +96,11 @@ impl PianobarMessageParser {
         message_type: &str,
         message_arguments: &[String],
     ) -> Result<PianobarMessage> {
+        log::debug!(
+            "Processing message: {} {:?}",
+            message_type,
+            message_arguments
+        );
         match message_type {
             "TIME" => self.process_message_time(message_arguments),
             _ => bail!("Unknown message type received: {}", message_type),
@@ -112,30 +117,24 @@ impl PianobarMessageParser {
             return None;
         }
 
-        // Reset if the message does not start with "\x1e[[#"
-        if message_start_differs_from(&self.buffer, "\x1e[[#") {
+        // Reset if the message does not start with "\x1e\x1e[[#"
+        if message_start_differs_from(&self.buffer, "\x1e\x1e[[#") {
             self.buffer = String::new();
             return None;
         }
 
         // Message is not yet over, keep reading
-        if !self.buffer.ends_with("\x1e#]]") {
+        if !self.buffer.ends_with("\x1e\x1e#]]") {
             return None;
         }
 
         // Seems like we have a message.
         // Parse it and then reset the buffer.
-        let message_parts = self.buffer[1..]
+        let message_parts = self.buffer[2..(self.buffer.len() - 5)]
             .split("\x1e")
             .map(|s| s.trim().to_string())
             .collect::<Vec<_>>();
         self.buffer = String::new();
-
-        // Make sure it can be split into at least 2 parts (e.g. 0 arguments)
-        if message_parts.len() < 2 {
-            log::warn!("Invalid message received.");
-            return None;
-        }
 
         // Get message type
         let message_type = {
@@ -151,7 +150,7 @@ impl PianobarMessageParser {
         };
 
         // Process message
-        match self.process_message(message_type, &message_parts[1..message_parts.len() - 1]) {
+        match self.process_message(message_type, &message_parts[1..]) {
             Ok(message) => Some(message),
             Err(err) => {
                 log::warn!("Failed to parse message: {}", err);
@@ -182,6 +181,7 @@ pub async fn parse_pianobar_messages(
         for ch in msg.chars() {
             if let Some(parsed_message) = message_parser.process(ch) {
                 // The message parser found a message, send it to all listeners
+                log::debug!("Sending pianobar message {:?} ...", parsed_message);
                 match pianobar_received_messages.send(parsed_message) {
                     Ok(num_receivers) => {
                         log::debug!("Sent pianobar message to {} listeners.", num_receivers)
