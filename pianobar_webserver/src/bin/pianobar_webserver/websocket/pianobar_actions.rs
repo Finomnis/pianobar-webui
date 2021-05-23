@@ -70,6 +70,7 @@ pub fn register(handler: &mut JsonRpcWebsocket<PianobarActions>) {
     handler.add_method("skip", skip);
     handler.add_method("resume", resume);
     handler.add_method("explain", explain);
+    handler.add_method("history", history);
 }
 
 async fn change_station(params: Params, actions: PianobarActions) -> Result<json::Value> {
@@ -109,4 +110,10 @@ pub async fn explain(params: Params, actions: PianobarActions) -> Result<json::V
     let _args = ArgsExtractor::new(params, 0)?;
 
     actions.explain().await.to_json()
+}
+
+pub async fn history(params: Params, actions: PianobarActions) -> Result<json::Value> {
+    let _args = ArgsExtractor::new(params, 0)?;
+
+    actions.history().await.to_json()
 }
