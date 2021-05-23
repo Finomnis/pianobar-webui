@@ -48,7 +48,8 @@ impl PianobarPlayerStateWatcher {
                 state.song_time_played = current;
                 state.song_time_total = total;
                 state.paused = paused;
-            } //_ => return Ok(()),
+            }
+            _ => return Ok(()),
         };
 
         self.channel_in.send(state)?;

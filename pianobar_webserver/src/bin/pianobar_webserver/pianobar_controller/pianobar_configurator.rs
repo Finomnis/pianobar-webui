@@ -30,7 +30,17 @@ fn set_event_command(config: &mut Ini) -> Result<()> {
 pub fn set_message_formats(config: &mut Ini) {
     config
         .with_general_section()
-        .set("format_msg_time", "\x1e\x1e[[#TIME#\x1e%s\x1e\x1e#]]");
+        .set("format_msg_time", "\x1e\x1e[[#TIME#\x1e%s\x1e\x1e#]]")
+        .set("format_msg_list", "%s")
+        .set(
+            "format_msg_question",
+            "\x1e\x1e[[#QUESTION#\x1e%s\x1e\x1e#]]",
+        )
+        .set("format_msg_info", "\x1e\x1e[[#INFO#\x1e%s\x1e\x1e#]]")
+        .set(
+            "format_list_song",
+            "\x1e\x1e[[#LIST_ENTRY_SONG#\x1e%a\x1e%t\x1e\x1e#]]",
+        );
 }
 
 pub fn set_pianobar_configs(config_file: &str) -> Result<()> {

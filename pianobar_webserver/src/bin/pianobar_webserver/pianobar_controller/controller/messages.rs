@@ -10,6 +10,16 @@ pub enum PianobarMessage {
         total: u32,
         paused: bool,
     },
+    ListEntrySong {
+        artist: String,
+        title: String,
+    },
+    Question {
+        message: String,
+    },
+    Info {
+        message: String,
+    },
 }
 
 struct PianobarMessageParser {
@@ -91,6 +101,29 @@ impl PianobarMessageParser {
         })
     }
 
+    fn process_message_list_entry(&mut self, arguments: &[String]) -> Result<PianobarMessage> {
+        if let [artist, title] = arguments {
+            Ok(PianobarMessage::ListEntrySong {
+                artist: artist.clone(),
+                title: title.clone(),
+            })
+        } else {
+            Err(anyhow!("Invalid number of arguments!"))
+        }
+    }
+
+    fn process_message_question(&mut self, arguments: &[String]) -> Result<PianobarMessage> {
+        Ok(PianobarMessage::Question {
+            message: arguments.get(0).ok_or(anyhow!("Missing argument"))?.clone(),
+        })
+    }
+
+    fn process_message_info(&mut self, arguments: &[String]) -> Result<PianobarMessage> {
+        Ok(PianobarMessage::Info {
+            message: arguments.get(0).ok_or(anyhow!("Missing argument"))?.clone(),
+        })
+    }
+
     fn process_message(
         &mut self,
         message_type: &str,
@@ -103,6 +136,9 @@ impl PianobarMessageParser {
         );
         match message_type {
             "TIME" => self.process_message_time(message_arguments),
+            "LIST_ENTRY_SONG" => self.process_message_list_entry(message_arguments),
+            "QUESTION" => self.process_message_question(message_arguments),
+            "INFO" => self.process_message_info(message_arguments),
             _ => bail!("Unknown message type received: {}", message_type),
         }
     }
@@ -110,10 +146,12 @@ impl PianobarMessageParser {
     fn process(&mut self, ch: char) -> Option<PianobarMessage> {
         self.buffer.push(ch);
 
-        // Definitely reset if we encounter a newline.
-        // None of our messages contain a newline.
-        if ch == '\n' {
-            self.buffer = String::new();
+        // Reset if the buffer grows too large.
+        // Messages should never be that big.
+        // This prevents a potential out-of-memory situation
+        // if pianobar decides to send really large messages.
+        if self.buffer.len() > 1000 {
+            self.buffer = self.buffer[500..].to_string();
             return None;
         }
 
@@ -181,10 +219,9 @@ pub async fn parse_pianobar_messages(
         for ch in msg.chars() {
             if let Some(parsed_message) = message_parser.process(ch) {
                 // The message parser found a message, send it to all listeners
-                log::debug!("Sending pianobar message {:?} ...", parsed_message);
                 match pianobar_received_messages.send(parsed_message) {
-                    Ok(num_receivers) => {
-                        log::debug!("Sent pianobar message to {} listeners.", num_receivers)
+                    Ok(_num_receivers) => {
+                        //log::debug!("Sent pianobar message to {} listeners.", num_receivers)
                     }
                     Err(broadcast::error::SendError(msg)) => {
                         log::error!("No receiver for message: {:?}", msg);
