@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use super::PianobarController;
 use super::{PianobarActor, PianobarMessage};
-use anyhow::{bail, Result};
+use anyhow::Result;
 use serde::Serialize;
 use tokio::{sync::broadcast, time::timeout};
 
@@ -76,12 +76,23 @@ impl PianobarActions {
 
     pub async fn explain(&self) -> Result<String> {
         log::info!("Explaining ...");
-        let (mut _receiver, mut actor) = self.lock().await;
+        let (receiver, mut actor) = self.lock().await;
 
         actor.write(&with_reset("e")).await?;
 
-        // TODO implement reading the actual result from the receiver
-        bail!("NOT IMPLEMENTED YET".to_string());
+        async fn read_response(
+            mut receiver: broadcast::Receiver<PianobarMessage>,
+        ) -> anyhow::Result<String> {
+            loop {
+                if let PianobarMessage::Info { message } = receiver.recv().await? {
+                    if message.starts_with("We're playing this track because") {
+                        return Ok(message);
+                    }
+                }
+            }
+        };
+
+        Ok(timeout(Duration::from_millis(1000), read_response(receiver)).await??)
     }
 
     pub async fn history(&self) -> Result<Vec<HistoryEntry>> {
